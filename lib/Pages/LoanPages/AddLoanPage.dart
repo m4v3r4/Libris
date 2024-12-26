@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:libris/Class/CustomBook.dart';
 import 'package:libris/Service/DatabaseHelper.dart';
 import 'package:libris/Service/UserDao.dart';
 import 'package:libris/Class/CustomUser.dart';
 import 'package:libris/Class/Loan.dart';
 import 'package:libris/Service/BookDao.dart'; // Kitapları getiren bir servis
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:libris/Service/LibraryService.dart'; // Yeni servisi import ettik
 
 class AddLoanPage extends StatefulWidget {
   @override
@@ -12,16 +13,14 @@ class AddLoanPage extends StatefulWidget {
 }
 
 class _AddLoanPageState extends State<AddLoanPage> {
-  final UserDao userDao = UserDao();
-  final BookDao bookDao = BookDao(); // BookDao servisi
+  final LibraryService libraryService =
+      LibraryService(); // LibraryService'i kullanıyoruz
   List<CustomUser> users = [];
   List<String> bookIds = []; // Kitap ID'leri listesi
   List<String> bookNames = []; // Kitap isimleri listesi
   CustomUser? selectedUser;
   String? selectedBookId;
   String? selectedBookName;
-  DateTime loanDate = DateTime.now();
-  DateTime? returnDate;
 
   @override
   void initState() {
@@ -32,13 +31,15 @@ class _AddLoanPageState extends State<AddLoanPage> {
 
   // Kullanıcıları yükleme
   Future<void> _loadUsers() async {
-    users = await userDao.getAllUsers();
+    users = await libraryService.userDao
+        .getAllUsers(); // LibraryService üzerinden kullanıcıları al
     setState(() {});
   }
 
   // Kitapları yükleme
   Future<void> _loadBooks() async {
-    final books = await bookDao.getAllBooks(); // BookDao üzerinden kitapları al
+    final books = await libraryService.bookDao
+        .getAllBooks(); // LibraryService üzerinden kitapları al
     setState(() {
       bookIds = books.map((book) => book.id).toList(); // Kitap ID'lerini al
       bookNames =
@@ -46,7 +47,7 @@ class _AddLoanPageState extends State<AddLoanPage> {
     });
   }
 
-  // Kitap ödünç verme işlemi
+  // Loan (ödünç) ekleme
   Future<void> _addLoan() async {
     if (selectedUser == null || selectedBookId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,36 +56,18 @@ class _AddLoanPageState extends State<AddLoanPage> {
       return;
     }
 
-    final loanId = DateTime.now()
-        .millisecondsSinceEpoch
-        .toString(); // Loan için benzersiz ID
-    final loan = Loan(
-      userFirstName: selectedUser!.firstname,
-      bookName: selectedBookName!,
-      userLastName: selectedUser!.lastname,
-      id: loanId,
-      bookId: selectedBookId!,
-      userId: selectedUser!.id,
-      loanDate: loanDate,
-      returnDate: returnDate,
-    );
-
-    // Loan verisini veritabanına ekle
-    final db = await DatabaseHelper().database;
-    await db.insert('loans', loan.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace);
-
-    // Kullanıcının ödünç alınan kitap listesine kitap ID'sini ekle
-    selectedUser!.borrowedBooksIds.add(loan.id);
-
-    // Kullanıcıyı güncelle
-    await userDao.updateUser(selectedUser!);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Kitap başarıyla ödünç verildi')),
-    );
-
-    Navigator.pop(context);
+    try {
+      // Kitap ödünç verme işlemi
+      await libraryService.borrowBook(selectedUser!.id, selectedBookId!);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Kitap başarıyla ödünç verildi')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bir hata oluştu: $e')),
+      );
+    }
   }
 
   @override
@@ -140,45 +123,6 @@ class _AddLoanPageState extends State<AddLoanPage> {
                   ),
                   SizedBox(height: 16),
 
-                  // Ödünç verme tarihi
-                  ListTile(
-                    title: Text('Ödünç Verme Tarihi: ${loanDate.toLocal()}'),
-                    onTap: () async {
-                      final pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: loanDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
-                      );
-                      if (pickedDate != null && pickedDate != loanDate) {
-                        setState(() {
-                          loanDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  SizedBox(height: 16),
-
-                  // İade tarihi
-                  ListTile(
-                    title: Text(
-                        'İade Tarihi: ${returnDate?.toLocal() ?? 'Belirtilmedi'}'),
-                    onTap: () async {
-                      final pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: returnDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
-                      );
-                      if (pickedDate != null && pickedDate != returnDate) {
-                        setState(() {
-                          returnDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  SizedBox(height: 16),
-
                   // Ödünç verme butonu
                   ElevatedButton(
                     onPressed: _addLoan,
@@ -206,11 +150,6 @@ class _AddLoanPageState extends State<AddLoanPage> {
                         Text('Seçilen Kitap:'),
                         Text(
                             '${selectedBookId != null ? bookNames[bookIds.indexOf(selectedBookId!)] : "Seçilmedi"}'),
-                        SizedBox(height: 16),
-                        Text('Ödünç Verme Tarihi: ${loanDate.toLocal()}'),
-                        SizedBox(height: 16),
-                        Text(
-                            'İade Tarihi: ${returnDate?.toLocal() ?? 'Belirtilmedi'}'),
                       ],
                     ),
             ),

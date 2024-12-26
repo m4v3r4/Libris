@@ -9,8 +9,8 @@ class CustomBook {
   final int pageCount;
   final String shelf;
   final String rack;
-  final int isAvailable;
-  final String? currentUserId;
+  int isAvailable;
+  String? currentUserId;
   final String isbn;
 
   CustomBook({

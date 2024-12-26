@@ -44,6 +44,31 @@ class LoanDao {
     });
   }
 
+// Kullanıcı ID'sine göre ödünç alınan kitapları getir
+  Future<List<Loan>> getLoansByUserId(String userId) async {
+    final db = await DatabaseHelper().database;
+
+    // Kullanıcı ID'sine göre 'loans' tablosundan ödünç alınan kitapları sorguluyoruz
+    final List<Map<String, dynamic>> maps = await db.query(
+      'loans',
+      where: 'userId = ?', // Kullanıcı ID'sine göre filtreleme
+      whereArgs: [userId], // Parametre olarak kullanıcı ID'si
+    );
+
+    // Verileri Loan nesnelerine dönüştürme
+    return List.generate(maps.length, (i) {
+      return Loan.fromJson(maps[i]);
+    });
+  }
+
+  Future<int> getLoanCount() async {
+    final db = await DatabaseHelper().database;
+    // 'loans' tablosundaki toplam satır sayısını alıyoruz
+    final count =
+        Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM loans'));
+    return count ?? 0; // Eğer count null ise 0 döndürüyoruz
+  }
+
   // Loan ekle
   Future<void> addLoan(Loan loan) async {
     final db = await DatabaseHelper().database;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:libris/Class/CustomUser.dart';
 import 'package:libris/Pages/UserPages/AddUserPage.dart';
+import 'package:libris/Pages/UserPages/ProfilePage.dart';
 import 'package:libris/Service/UserDao.dart';
 
 class UsersPage extends StatefulWidget {
@@ -232,6 +233,13 @@ class _UsersPageState extends State<UsersPage> {
                                 ? 'Ödünç Kitap Var'
                                 : 'Ödünç Kitap Yok'),
                             onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProfilePage(
+                                      user: user,
+                                    ),
+                                  ));
                               // Kullanıcıya tıklandığında yapılacak işlemler
                               // Örneğin, kullanıcı detay sayfasına yönlendirme
                             },

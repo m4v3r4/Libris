@@ -1,12 +1,12 @@
 class Loan {
   final String id;
-  final String userId;
-  final String userFirstName;
-  final String userLastName;
+  String userId;
+  String userFirstName;
+  String userLastName;
   final String bookId;
   final String bookName;
-  final DateTime loanDate;
-  final DateTime? returnDate;
+  DateTime loanDate;
+  DateTime? returnDate;
 
   Loan({
     required this.id,

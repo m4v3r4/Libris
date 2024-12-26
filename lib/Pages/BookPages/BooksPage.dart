@@ -4,6 +4,7 @@ import 'package:libris/Pages/BookPages/AddBookPage.dart';
 import 'package:libris/Pages/BookPages/BookDetailsPage.dart';
 import 'package:libris/Pages/BookPages/EditBookPage.dart';
 import 'package:libris/Service/BookDao.dart';
+import 'package:libris/Service/LibraryService.dart';
 
 class BooksPage extends StatefulWidget {
   @override
@@ -95,6 +96,21 @@ class _BooksPageState extends State<BooksPage> {
     }
   }
 
+  Future<void> navigateToAddBookPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddBookPage()),
+    );
+
+    // Eğer dönen sonuç 'true' ise listeyi yenile
+    if (result == true) {
+      setState(() {
+        // Kitap listesini yeniden yüklemek için gereken işlemleri burada yapın
+        loadBooks();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,11 +123,7 @@ class _BooksPageState extends State<BooksPage> {
               return [
                 PopupMenuItem<String>(
                   onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AddBookPage(),
-                        ));
+                    navigateToAddBookPage();
                   },
                   value: 'add',
                   child: Row(
@@ -119,16 +131,6 @@ class _BooksPageState extends State<BooksPage> {
                       Icon(Icons.add),
                       SizedBox(width: 8),
                       Text('Yeni Kitap Ekle'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete),
-                      SizedBox(width: 8),
-                      Text('Kitap Sil'),
                     ],
                   ),
                 ),
@@ -251,7 +253,58 @@ class _BooksPageState extends State<BooksPage> {
                                   },
                                   icon: Icon(Icons.edit)),
                               IconButton(
-                                  onPressed: () {}, icon: Icon(Icons.delete))
+                                onPressed: () async {
+                                  // Silme işlemi için onay diyalogu
+                                  bool? confirmDelete = await showDialog<bool>(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: Text('Kitap Silme'),
+                                        content: Text(
+                                            'Bu kitabı silmek istediğinizden emin misiniz?'),
+                                        actions: <Widget>[
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop(
+                                                  false); // Silme işlemini iptal et
+                                            },
+                                            child: Text('Hayır'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop(
+                                                  true); // Silme işlemini onayla
+                                            },
+                                            child: Text('Evet'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+
+                                  // Eğer kullanıcı silmeyi onaylarsa
+                                  if (confirmDelete == true) {
+                                    // Kitap silme işlemini başlat
+                                    await LibraryService()
+                                        .bookDao
+                                        .deleteBook(filteredBooks[index].id);
+                                    setState(() {
+                                      loadBooks();
+                                    });
+
+                                    // Silme işlemi başarılı, kullanıcıya bildirim yap
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content:
+                                              Text('Kitap başarıyla silindi.')),
+                                    );
+                                  } else {
+                                    // Kullanıcı silmeyi iptal etti
+                                    print('Silme işlemi iptal edildi.');
+                                  }
+                                },
+                                icon: Icon(Icons.delete),
+                              )
                             ],
                           ),
                           onTap: () {

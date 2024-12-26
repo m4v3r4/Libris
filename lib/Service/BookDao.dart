@@ -21,6 +21,23 @@ class BookDao {
     });
   }
 
+  Future<CustomBook?> getBookById(String id) async {
+    final db = await dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'books',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1, // Performansı artırmak için yalnızca bir sonuç döndürülür
+    );
+
+    // Eğer sonuç varsa, CustomBook objesi oluşturulur. Yoksa null döner.
+    if (maps.isNotEmpty) {
+      return CustomBook.fromJson(maps.first);
+    } else {
+      return null; // Verilen ID ile kitap bulunamadı
+    }
+  }
+
   // Kitap sayısını döndüren fonksiyon
   Future<int> getBooksCount() async {
     final db = await dbHelper.database;

@@ -81,7 +81,7 @@ class _AddBookPageState extends State<AddBookPage> {
     await _bookDao.insertBook(newBook);
 
     // Başarılı ekleme sonrası liste sayfasına geri dön
-    Navigator.pop(context);
+    Navigator.pop(context, true);
   }
 
   @override
@@ -225,15 +225,17 @@ class _AddBookPageState extends State<AddBookPage> {
               Expanded(
                 flex: 1,
                 child: Card(
-                  margin: EdgeInsets.all(300),
-                  elevation: 5,
-                  child: bookThumbnail.isNotEmpty
-                      ? Image.network(
-                          bookThumbnail,
-                          fit: BoxFit.fill,
-                        )
-                      : Icon(Icons.book),
-                ),
+                    margin: EdgeInsets.all(10),
+                    elevation: 5,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width / 4,
+                      height: MediaQuery.of(context).size.height / 1.4,
+                      child: bookThumbnail.isNotEmpty
+                          ? Image.network(
+                              bookThumbnail,
+                            )
+                          : Icon(Icons.book),
+                    )),
               ),
             ],
           ),

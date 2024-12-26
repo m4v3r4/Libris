@@ -11,85 +11,118 @@ class BookDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(book.title),
+        title: Text(
+          book.title,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Kitap Kapağı
-                Image.network(book.thumbnail),
-                SizedBox(height: 10),
-                // Kitap Başlığı
-                Text(
-                  book.title,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Yazarları
-                Text(
-                  'Yazar(lar): ${book.authors.join(', ')}',
-                  style: TextStyle(fontSize: 18),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Açıklaması
-                Text(
-                  'Açıklama: ${book.description}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Yayıncı
-                Text(
-                  'Yayıncı: ${book.publisher}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Yayınlanma Tarihi
-                Text(
-                  'Yayınlanma Tarihi: ${book.publishedDate}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Sayfa Sayısı
-                Text(
-                  'Sayfa Sayısı: ${book.pageCount}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap ISBN
-                Text(
-                  'ISBN: ${book.isbn}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Mevcudiyet Durumu
-                Text(
-                  'Kütüphanede Mi? ${book.isAvailable == 1 ? 'Evet' : 'Hayır'}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 10),
-
-                // Kitap Ödünç Alan Kullanıcı (varsa)
-                if (book.currentUserId != null)
-                  Text(
-                    'Ödünç Alan Kullanıcı: ${book.currentUserId}',
-                    style: TextStyle(fontSize: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Kitap Kapağı
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    book.thumbnail,
+                    height: 200,
+                    width: 150,
+                    fit: BoxFit.cover,
                   ),
-              ],
-            ),
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // Kitap Başlık ve Yazarlar
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      book.title,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Yazar(lar): ${book.authors.join(', ')}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // Kitap Detay Kartı
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow('Açıklama:', book.description),
+                      _buildDetailRow('Yayıncı:', book.publisher),
+                      _buildDetailRow('Yayınlanma Tarihi:', book.publishedDate),
+                      _buildDetailRow('Sayfa Sayısı:', '${book.pageCount}'),
+                      _buildDetailRow('ISBN:', book.isbn),
+                      _buildDetailRow(
+                        'Kütüphanede Mi?',
+                        book.isAvailable == 1 ? 'Evet' : 'Hayır',
+                      ),
+                      if (book.currentUserId != null)
+                        _buildDetailRow(
+                          'Ödünç Alan Kullanıcı:',
+                          book.currentUserId!,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Detay satırını oluşturan widget
+  Widget _buildDetailRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 16, color: Colors.grey[800]),
+            ),
+          ),
+        ],
       ),
     );
   }
