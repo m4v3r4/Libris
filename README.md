@@ -73,7 +73,7 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyi
 
 Projenin yol haritası GitHub Issues üzerinden yönetilmektedir.
 
-👉 https://github.com/KULLANICI_ADI/libris/issues?q=label:roadmap
+👉 https://github.com/m4v3r4/libris/issues?q=label:roadmap
 
 
 
