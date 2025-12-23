@@ -1,80 +1,168 @@
-# Libris
-# Libris - Kütüphane Yönetim Sistemi
+# Libris – Library Management System | Kütüphane Yönetim Sistemi
 
-Libris, kütüphane operasyonlarını kolaylaştırmak, kitap takibini sağlamak ve üye yönetimini dijitalleştirmek amacıyla Flutter kullanılarak geliştirilmiş modern bir mobil uygulamadır. Veri saklama işlemi için yerel SQLite veritabanı kullanır.
+> **Libris** is a modern, open-source **library management mobile application** built with **Flutter**. It simplifies book tracking, member management, and loan operations using a fast and reliable **SQLite** local database.
+>
+> **Libris**, **Flutter** ile geliştirilmiş modern ve açık kaynaklı bir **kütüphane yönetim sistemi** mobil uygulamasıdır. Kitap takibi, üye yönetimi ve emanet işlemlerini **SQLite** yerel veritabanı ile kolaylaştırır.
 
-## 🚀 Özellikler
+---
 
-### 📚 Kitap Yönetimi
-*   Yeni kitap ekleme, düzenleme ve silme.
-*   Kitap listeleme ve detay görüntüleme.
-*   En çok okunan ve son eklenen kitap istatistikleri.
+## 🌍 About Libris | Libris Hakkında
 
-### 👥 Üye Yönetimi
-*   Üye kaydı oluşturma, güncelleme ve silme.
-*   İsim, telefon veya e-posta ile gelişmiş üye arama.
-*   En aktif üyeler (en çok kitap okuyanlar) ve yeni üyeler listesi.
+**Libris Library Management System** is designed for small to medium-sized libraries, schools, and personal collections. It focuses on usability, offline-first architecture, and clean modular code structure.
 
-### 🔄 Emanet (Loan) İşlemleri
-*   Kitap ödünç verme ve iade alma süreçleri.
-*   **Akıllı Arama:** Emanet verirken kitap ve üyeleri açılır pencerede arayarak seçme.
-*   **Durum Takibi:** Aktif, gecikmiş ve iade edilmiş emanetlerin görsel olarak ayrıştırılması.
-*   **Filtreleme:** Tarih aralığına ve emanet durumuna (Gecikmiş, Emanette vb.) göre listeleme.
-*   Stok kontrolü (Emanetteki kitap tekrar verilemez).
+**Libris Kütüphane Yönetim Sistemi**, küçük ve orta ölçekli kütüphaneler, okullar ve kişisel koleksiyonlar için tasarlanmıştır. Kullanıcı dostu arayüz, offline çalışma ve modüler mimariyi hedefler.
 
-### 📊 Dashboard (Ana Sayfa)
-*   Hızlı erişim menüsü (Sol bar).
-*   Özet istatistikler (Widget'lar üzerinden anlık veri takibi).
+---
 
-## 🛠 Teknolojiler ve Mimari
+## 🚀 Features | Özellikler
 
-Bu proje **Flutter** ile geliştirilmiş olup, özellik tabanlı (feature-based) bir klasör yapısına sahiptir.
+### 📚 Book Management | Kitap Yönetimi
 
-*   **Dil:** Dart
-*   **Framework:** Flutter
-*   **Veritabanı:** SQLite (`sqflite` paketi)
-*   **Mimari:** Service-Repository Pattern benzeri bir yapı kullanılmıştır. Her özelliğin (Books, Members, Loans) kendi servisi ve modeli bulunur.
+* Add, edit, and delete books
 
-### Klasör Yapısı
+* Book listing and detailed view
+
+* Most read and recently added book statistics
+
+* Yeni kitap ekleme, düzenleme ve silme
+
+* Kitap listeleme ve detay görüntüleme
+
+* En çok okunan ve son eklenen kitap istatistikleri
+
+---
+
+### 👥 Member Management | Üye Yönetimi
+
+* Create, update, and delete members
+
+* Advanced search by name, phone, or email
+
+* Most active and newly registered members
+
+* Üye kaydı oluşturma, güncelleme ve silme
+
+* İsim, telefon veya e-posta ile gelişmiş arama
+
+* En aktif ve yeni üyeler listesi
+
+---
+
+### 🔄 Loan Management | Emanet İşlemleri
+
+* Book borrowing and return workflows
+
+* Smart search modal for books and members
+
+* Visual loan status tracking (active, overdue, returned)
+
+* Filtering by date range and loan status
+
+* Stock control (borrowed books cannot be re-loaned)
+
+* Kitap ödünç verme ve iade alma süreçleri
+
+* Kitap ve üyeler için akıllı arama penceresi
+
+* Aktif, gecikmiş ve iade edilmiş emanetlerin takibi
+
+* Tarih ve durum bazlı filtreleme
+
+* Stok kontrolü (emanetteki kitap tekrar verilemez)
+
+---
+
+### 📊 Dashboard | Ana Sayfa
+
+* Quick access side navigation
+
+* Real-time statistics widgets
+
+* Hızlı erişim menüsü (sol bar)
+
+* Anlık istatistikler (widget tabanlı)
+
+---
+
+## 🛠 Tech Stack & Architecture | Teknolojiler ve Mimari
+
+**Libris** is built using a **feature-based architecture** for scalability and maintainability.
+
+**Libris**, ölçeklenebilir ve sürdürülebilir bir yapı için **feature-based mimari** kullanır.
+
+* **Language / Dil:** Dart
+* **Framework:** Flutter
+* **Database / Veritabanı:** SQLite (`sqflite`)
+* **Architecture / Mimari:** Service–Repository Pattern
+
+Each feature (Books, Members, Loans) has its own models, services, and UI layers.
+
+---
+
+### 📁 Project Structure | Klasör Yapısı
 
 ```text
 lib/
-├── common/             # Genel yardımcı sınıflar (DatabaseHelper vb.)
-├── features/           # Uygulama özellikleri
-│   ├── books/          # Kitap modelleri, servisleri ve ekranları
-│   ├── members/        # Üye modelleri, servisleri ve ekranları
-│   ├── loans/          # Emanet modelleri, servisleri ve ekranları
-│   └── home/           # Ana sayfa ve dashboard widget'ları
-└── main.dart           # Uygulama giriş noktası
+├── common/             # Shared utilities (DatabaseHelper, constants)
+├── features/           # Feature-based modules
+│   ├── books/          # Book models, services, and screens
+│   ├── members/        # Member models, services, and screens
+│   ├── loans/          # Loan models, services, and screens
+│   └── home/           # Dashboard & home widgets
+└── main.dart           # Application entry point
 ```
 
-## 📸 Kurulum ve Çalıştırma
+---
 
-Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyin:
+## ⚙️ Installation & Run | Kurulum ve Çalıştırma
 
-1.  **Depoyu klonlayın:**
-    ```bash
-    git clone https://github.com/kullaniciadi/libris.git
-    cd libris
-    ```
+### Requirements | Gereksinimler
 
-2.  **Bağımlılıkları yükleyin:**
-    ```bash
-    flutter pub get
-    ```
+* Flutter SDK
+* Android Studio or VS Code
+* Emulator or physical device
 
-3.  **Uygulamayı çalıştırın:**
-    Bir emülatör veya fiziksel cihaz bağladıktan sonra:
-    ```bash
-    flutter run
-    ```
+### Steps | Adımlar
+
+1. **Clone the repository / Depoyu klonlayın**
+
+```bash
+git clone https://github.com/m4v3r4/libris.git
+cd libris
+```
+
+2. **Install dependencies / Bağımlılıkları yükleyin**
+
+```bash
+flutter pub get
+```
+
+3. **Run the application / Uygulamayı çalıştırın**
+
+```bash
+flutter run
+```
+
+---
 
 ## 🗺️ Roadmap
 
-Projenin yol haritası GitHub Issues üzerinden yönetilmektedir.
+The project roadmap is managed via **GitHub Issues**.
 
-👉 https://github.com/m4v3r4/libris/issues?q=label:roadmap
+Projenin yol haritası **GitHub Issues** üzerinden yönetilmektedir.
 
+👉 [https://github.com/m4v3r4/libris/issues?q=label:roadmap](https://github.com/m4v3r4/libris/issues?q=label:roadmap)
 
+---
 
-Libris v1.0
+## 📄 License | Lisans
+
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+Bu proje **GNU General Public License v3.0 (GPL-3.0)** ile lisanslanmıştır.
+
+---
+
+**Libris v1.0**
+
+Flutter • SQLite • Open Source Library Management System
