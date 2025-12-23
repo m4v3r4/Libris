@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:libris/features/books/screen/book_list_screen.dart';
 import 'package:libris/features/loans/screen/loan_list_screen.dart';
 import 'package:libris/features/members/screens/members_list_screen.dart';
+import 'package:libris/features/settings/screen/settings_screen.dart';
 
 class Leftbar extends StatefulWidget {
   const Leftbar({super.key});
@@ -68,7 +69,10 @@ class _LeftbarState extends State<Leftbar> {
             icon: Icons.settings,
             title: 'Ayarlar',
             onTap: () {
-              // Ayarlar sayfasına yönlendirme kodu buraya gelecek
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
             },
           ),
 
