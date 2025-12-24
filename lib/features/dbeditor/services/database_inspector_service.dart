@@ -4,6 +4,11 @@ import 'package:sqflite/sqflite.dart';
 class DatabaseInspectorService {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
+  /// Veritabanı nesnesini döndürür
+  Future<Database> getDatabase() {
+    return _dbHelper.database;
+  }
+
   /// Veritabanındaki tüm tablo isimlerini getirir
   Future<List<String>> getTables() async {
     final db = await _dbHelper.database;

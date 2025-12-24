@@ -37,6 +37,29 @@ class BookService {
     return maps.map(Book.fromMap).toList();
   }
 
+  getBooksByCategory(String category) async {
+    final db = await _dbHelper.database;
+    await init();
+    final maps = await db.query(
+      'books',
+      where: 'category = ?',
+      whereArgs: [category],
+      orderBy: 'title ASC',
+    );
+    return maps.map(Book.fromMap).toList();
+  }
+
+  updateBookCategory(int bookId, String newCategory) async {
+    final db = await _dbHelper.database;
+    await init();
+    return await db.update(
+      'books',
+      {'category': newCategory, 'updatedAt': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [bookId],
+    );
+  }
+
   /// ID ile Kitap Getir
   Future<Book?> getBookById(int id) async {
     final db = await _dbHelper.database;
