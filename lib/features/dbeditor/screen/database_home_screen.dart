@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:libris/features/dbeditor/services/database_inspector_service.dart';
 import 'package:libris/features/dbeditor/widgets/table_view.dart';
+import 'package:libris/features/settings/screen/category_manager_screen.dart';
+import 'package:libris/features/settings/services/category_service.dart';
 
 class DatabaseHomeScreen extends StatefulWidget {
   const DatabaseHomeScreen({super.key});
@@ -165,6 +167,20 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
     }
   }
 
+  void _openCategoryManager() {
+    // DatabaseInspectorService içindeki DB instance'ını kullanıyoruz
+    // Not: _service.getDatabase() gibi bir metodunuz yoksa burayı projenizdeki DB erişimine göre güncelleyin.
+    // Geçici olarak inspector service'in kullandığı DB yolunu varsayıyoruz.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryManagerScreen(
+          service: CategoryService(_service.getDatabase),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,6 +196,11 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
             icon: const Icon(Icons.download),
             tooltip: 'Dışa Aktar',
             onPressed: _exportDatabase,
+          ),
+          IconButton(
+            icon: const Icon(Icons.category),
+            tooltip: 'Kategorileri Yönet',
+            onPressed: _openCategoryManager,
           ),
         ],
       ),

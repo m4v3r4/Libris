@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/screen/book_list_screen.dart';
-import 'package:libris/features/dbeditor/screen/database_home_screen.dart';
 import 'package:libris/features/loans/screen/loan_list_screen.dart';
 import 'package:libris/features/members/screens/members_list_screen.dart';
+import 'package:libris/features/settings/screen/category_manager_screen.dart';
+import 'package:libris/features/settings/services/category_service.dart';
 import 'package:libris/features/settings/screen/settings_screen.dart';
 
 class Leftbar extends StatefulWidget {
@@ -15,16 +17,12 @@ class Leftbar extends StatefulWidget {
 class _LeftbarState extends State<Leftbar> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(width: 1),
-
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(50),
-          bottomRight: Radius.circular(0),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 1),
+    return Card(
+      semanticContainer: true,
+      clipBehavior: Clip.antiAliasWithSaveLayer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      elevation: 5,
+      margin: const EdgeInsets.all(10),
       child: Column(
         children: [
           LeftBarItem(
@@ -60,14 +58,19 @@ class _LeftbarState extends State<Leftbar> {
             },
           ),
           LeftBarItem(
-            icon: Icons.data_saver_off,
-            title: 'Veri Tabanı',
+            icon: Icons.category,
+            title: 'Kategoriler',
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => DatabaseHomeScreen()),
+                MaterialPageRoute(
+                  builder: (context) => CategoryManagerScreen(
+                    service: CategoryService(
+                      () => DatabaseHelper.instance.database,
+                    ),
+                  ),
+                ),
               );
-              // Ayarlar sayfasına yönlendirme kodu buraya gelecek
             },
           ),
           LeftBarItem(
