@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:libris/features/dbeditor/screen/database_home_screen.dart';
 import 'package:libris/features/settings/services/settings_service.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -50,6 +51,23 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (val) {
                     if (val != null) settingsService.saveLanguage(val);
                   },
+                ),
+              );
+            },
+          ),
+          const Divider(),
+
+          // VERİTABANI YÖNETİCİSİ
+          ListTile(
+            leading: const Icon(Icons.storage, color: Colors.blueGrey),
+            title: const Text('Veritabanı Yöneticisi'),
+            subtitle: const Text('Tabloları görüntüle ve düzenle'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DatabaseHomeScreen(),
                 ),
               );
             },
