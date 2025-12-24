@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:libris/features/books/screen/book_list_screen.dart';
+import 'package:libris/features/dbeditor/screen/database_home_screen.dart';
 import 'package:libris/features/loans/screen/loan_list_screen.dart';
 import 'package:libris/features/members/screens/members_list_screen.dart';
 import 'package:libris/features/settings/screen/settings_screen.dart';
@@ -62,6 +63,10 @@ class _LeftbarState extends State<Leftbar> {
             icon: Icons.data_saver_off,
             title: 'Veri Tabanı',
             onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DatabaseHomeScreen()),
+              );
               // Ayarlar sayfasına yönlendirme kodu buraya gelecek
             },
           ),
