@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-import 'package:libris/features/books/services/book_service.dart';
-import 'package:libris/features/loans/models/loan.dart';
-import 'package:libris/features/loans/services/loan_service.dart';
+import 'package:libris/common/models/loan.dart';
 import 'package:libris/features/members/models/member.dart';
-import 'package:libris/features/members/services/members_service.dart';
 
 class LoanFormScreen extends StatefulWidget {
   final Loan? loan;
@@ -17,10 +15,9 @@ class LoanFormScreen extends StatefulWidget {
 
 class _LoanFormScreenState extends State<LoanFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final LoanService _loanService = LoanService();
-  final MembersService _membersService = MembersService();
+  final DatabaseHelper _loanService = DatabaseHelper.instance;
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
   // BookService'in projenizde var olduğunu varsayıyoruz
-  final BookService _bookService = BookService();
 
   Book? _selectedBook;
   Member? _selectedMember;
@@ -37,8 +34,8 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    final book = await _bookService.getBookById(widget.loan!.bookId);
-    final member = await _membersService.getMemberById(widget.loan!.memberId);
+    final book = await _databaseHelper.getBookById(widget.loan!.bookId);
+    final member = await _databaseHelper.getMemberById(widget.loan!.memberId);
     if (mounted) {
       setState(() {
         _selectedBook = book;
@@ -106,7 +103,7 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
           expand: false,
           builder: (context, scrollController) {
             return _MemberSearchSheet(
-              membersService: _membersService,
+              databaseHelper: _databaseHelper,
               onSelect: (member) {
                 setState(() => _selectedMember = member);
                 Navigator.pop(context);
@@ -128,7 +125,7 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
           expand: false,
           builder: (context, scrollController) {
             return _BookSearchSheet(
-              bookService: _bookService,
+              bookService: _databaseHelper,
               onSelect: (book) {
                 setState(() => _selectedBook = book);
                 Navigator.pop(context);
@@ -221,11 +218,12 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
 
 /// Üye Arama ve Seçme Widget'ı
 class _MemberSearchSheet extends StatefulWidget {
-  final MembersService membersService;
+  final DatabaseHelper databaseHelper;
   final Function(Member) onSelect;
 
   const _MemberSearchSheet({
-    required this.membersService,
+    super.key,
+    required this.databaseHelper,
     required this.onSelect,
   });
 
@@ -243,7 +241,7 @@ class _MemberSearchSheetState extends State<_MemberSearchSheet> {
       setState(() => _results = []);
       return;
     }
-    final res = await widget.membersService.searchMembers(query);
+    final res = await widget.databaseHelper.searchMembers(query);
     if (mounted) setState(() => _results = res);
   }
 
@@ -286,10 +284,14 @@ class _MemberSearchSheetState extends State<_MemberSearchSheet> {
 
 /// Kitap Arama ve Seçme Widget'ı
 class _BookSearchSheet extends StatefulWidget {
-  final BookService bookService;
+  final DatabaseHelper bookService;
   final Function(Book) onSelect;
 
-  const _BookSearchSheet({required this.bookService, required this.onSelect});
+  const _BookSearchSheet({
+    super.key,
+    required this.bookService,
+    required this.onSelect,
+  });
 
   @override
   State<_BookSearchSheet> createState() => _BookSearchSheetState();

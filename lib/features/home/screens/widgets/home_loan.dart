@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:libris/features/loans/services/loan_service.dart';
+import 'package:libris/common/services/database_helper.dart';
 
 class HomeLoan extends StatefulWidget {
   const HomeLoan({super.key});
@@ -11,7 +11,7 @@ class HomeLoan extends StatefulWidget {
 class _HomeLoanState extends State<HomeLoan>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final LoanService _loanService = LoanService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   List<Map<String, dynamic>> _overdueLoans = [];
   List<Map<String, dynamic>> _recentLoans = [];
@@ -27,8 +27,8 @@ class _HomeLoanState extends State<HomeLoan>
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final overdue = await _loanService.getOverdueLoans();
-      final recent = await _loanService.getRecentLoans();
+      final overdue = await _databaseHelper.getOverdueLoans();
+      final recent = await _databaseHelper.getRecentLoans();
       if (mounted) {
         setState(() {
           _overdueLoans = overdue;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
+
 import 'package:libris/features/books/screen/book_detail_screen.dart';
 import 'package:libris/features/books/screen/book_form_screen.dart';
-import 'package:libris/features/books/services/book_service.dart';
 import 'package:libris/features/books/widgets/book_item_widget.dart';
 
 enum BookSortType { titleAsc, titleDesc, newest }
@@ -16,7 +16,7 @@ class BookListScreen extends StatefulWidget {
 }
 
 class _BookListScreenState extends State<BookListScreen> {
-  final BookService _bookService = BookService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   List<Book> _books = [];
   bool _isLoading = true;
@@ -33,7 +33,7 @@ class _BookListScreenState extends State<BookListScreen> {
 
   Future<void> _loadBooks() async {
     setState(() => _isLoading = true);
-    final books = await _bookService.getBooks();
+    final books = await _databaseHelper.getBooks();
     setState(() {
       _books = books;
       _isLoading = false;
@@ -191,7 +191,7 @@ class _BookListScreenState extends State<BookListScreen> {
   }
 
   Future<void> _deleteBook(int id) async {
-    await _bookService.deleteBook(id);
+    await _databaseHelper.deleteBook(id);
     _loadBooks();
   }
 }

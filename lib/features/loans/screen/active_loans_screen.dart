@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/loans/screen/loan_return_screen.dart';
-import 'package:libris/features/loans/services/loan_service.dart';
 
 class ActiveLoansScreen extends StatefulWidget {
   const ActiveLoansScreen({super.key});
@@ -10,7 +10,7 @@ class ActiveLoansScreen extends StatefulWidget {
 }
 
 class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
-  final LoanService _loanService = LoanService();
+  final DatabaseHelper _loanService = DatabaseHelper.instance;
   List<Map<String, dynamic>> _loans = [];
   bool _isLoading = true;
 

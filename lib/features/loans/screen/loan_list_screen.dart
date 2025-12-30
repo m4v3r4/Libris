@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:libris/features/loans/models/loan.dart';
+import 'package:libris/common/models/loan.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
-import 'package:libris/features/loans/services/loan_service.dart';
 import 'package:libris/features/loans/widgets/loan_card.dart';
 
 enum LoanFilterStatus { all, active, overdue, returned }
@@ -14,7 +14,7 @@ class LoanListScreen extends StatefulWidget {
 }
 
 class _LoanListScreenState extends State<LoanListScreen> {
-  final LoanService _loanService = LoanService();
+  final DatabaseHelper _loanService = DatabaseHelper.instance;
   List<Loan> _allLoans = [];
   List<Loan> _filteredLoans = [];
   LoanFilterStatus _filterStatus = LoanFilterStatus.all;

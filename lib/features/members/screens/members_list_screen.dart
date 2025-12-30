@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/members/models/member.dart';
 import 'package:libris/features/members/screens/member_detail_screen.dart';
-import 'package:libris/features/members/services/members_service.dart';
 
 class MembersListScreen extends StatefulWidget {
   const MembersListScreen({super.key});
@@ -11,7 +11,7 @@ class MembersListScreen extends StatefulWidget {
 }
 
 class _MembersListScreenState extends State<MembersListScreen> {
-  final MembersService _memberService = MembersService();
+  final DatabaseHelper _memberService = DatabaseHelper.instance;
   final TextEditingController _searchController = TextEditingController();
 
   List<Member> _members = [];

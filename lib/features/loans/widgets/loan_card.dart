@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:libris/features/books/services/book_service.dart';
-import 'package:libris/features/loans/models/loan.dart';
+import 'package:libris/common/services/database_helper.dart';
+import 'package:libris/common/models/loan.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
-import 'package:libris/features/members/services/members_service.dart';
 
 class LoanCard extends StatefulWidget {
   final Loan loan;
@@ -23,8 +22,7 @@ class LoanCard extends StatefulWidget {
 }
 
 class _LoanCardState extends State<LoanCard> {
-  final BookService _bookService = BookService();
-  final MembersService _membersService = MembersService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   String _bookTitle = 'Yükleniyor...';
   String _memberName = 'Yükleniyor...';
@@ -36,8 +34,8 @@ class _LoanCardState extends State<LoanCard> {
   }
 
   Future<void> _fetchDetails() async {
-    final book = await _bookService.getBookById(widget.loan.bookId);
-    final member = await _membersService.getMemberById(widget.loan.memberId);
+    final book = await _databaseHelper.getBookById(widget.loan.bookId);
+    final member = await _databaseHelper.getMemberById(widget.loan.memberId);
 
     if (mounted) {
       setState(() {

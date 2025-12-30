@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
 import 'package:libris/features/books/screen/book_form_screen.dart';
-import 'package:libris/features/books/services/book_service.dart';
 
 class BookDetailScreen extends StatefulWidget {
   final Book book;
@@ -13,7 +13,7 @@ class BookDetailScreen extends StatefulWidget {
 }
 
 class _BookDetailScreenState extends State<BookDetailScreen> {
-  final BookService _bookService = BookService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
   late Book _book;
 
   @override
@@ -23,7 +23,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Future<void> _refreshBook() async {
-    final updated = await _bookService.getBookById(_book.id!);
+    final updated = await _databaseHelper.getBookById(_book.id!);
     if (updated != null) {
       setState(() => _book = updated);
     }
@@ -38,7 +38,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Future<void> _deleteBook() async {
-    await _bookService.deleteBook(_book.id!);
+    await _databaseHelper.deleteBook(_book.id!);
     if (mounted) {
       Navigator.pop(context, true);
     }

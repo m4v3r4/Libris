@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-import 'package:libris/features/books/services/book_service.dart';
 
 class BookFormScreen extends StatefulWidget {
   final Book? book;
@@ -13,7 +13,7 @@ class BookFormScreen extends StatefulWidget {
 
 class _BookFormScreenState extends State<BookFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _bookService = BookService();
+  final _bookService = DatabaseHelper.instance;
 
   late bool _isEditing;
   late bool _isAvailable;
