@@ -113,6 +113,39 @@ class LoanService {
     );
   }
 
+  /// Gecikmiş emanetleri getir (Kitap ve Üye bilgileriyle)
+  Future<List<Map<String, dynamic>>> getOverdueLoans() async {
+    final db = await _db();
+    final now = DateTime.now().toIso8601String();
+    return await db.rawQuery(
+      '''
+      SELECT l.*, b.title as bookTitle, m.name as memberName 
+      FROM loans l
+      LEFT JOIN books b ON l.bookId = b.id
+      LEFT JOIN members m ON l.memberId = m.id
+      WHERE l.returnedAt IS NULL AND l.dueDate < ?
+      ORDER BY l.dueDate ASC
+    ''',
+      [now],
+    );
+  }
+
+  /// Son hareketler (Verilen/Alınan)
+  Future<List<Map<String, dynamic>>> getRecentLoans({int limit = 10}) async {
+    final db = await _db();
+    return await db.rawQuery(
+      '''
+      SELECT l.*, b.title as bookTitle, m.name as memberName 
+      FROM loans l
+      LEFT JOIN books b ON l.bookId = b.id
+      LEFT JOIN members m ON l.memberId = m.id
+      ORDER BY l.updatedAt DESC
+      LIMIT ?
+    ''',
+      [limit],
+    );
+  }
+
   /// Loan sil (admin/debug)
   Future<int> deleteLoan(int id) async {
     final db = await _db();
