@@ -16,10 +16,18 @@ class BookService {
         isbn TEXT,
         pageCount INTEGER,
         description TEXT,
+        category TEXT,
         createdAt TEXT,
         updatedAt TEXT
       )
     ''');
+
+    // Migration: Eğer tablo önceden varsa ve category sütunu yoksa ekle
+    final tableInfo = await db.rawQuery('PRAGMA table_info(books)');
+    final hasCategory = tableInfo.any((c) => c['name'] == 'category');
+    if (!hasCategory) {
+      await db.execute('ALTER TABLE books ADD COLUMN category TEXT');
+    }
   }
 
   /// Kitap Ekle
@@ -37,7 +45,7 @@ class BookService {
     return maps.map(Book.fromMap).toList();
   }
 
-  getBooksByCategory(String category) async {
+  Future<List<Book>> getBooksByCategory(String category) async {
     final db = await _dbHelper.database;
     await init();
     final maps = await db.query(
@@ -49,7 +57,7 @@ class BookService {
     return maps.map(Book.fromMap).toList();
   }
 
-  updateBookCategory(int bookId, String newCategory) async {
+  Future<int> updateBookCategory(int bookId, String newCategory) async {
     final db = await _dbHelper.database;
     await init();
     return await db.update(
