@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/members/models/member.dart';
-import 'package:libris/features/members/services/members_service.dart';
 
 class HomeMembers extends StatefulWidget {
   const HomeMembers({super.key});
@@ -12,7 +12,7 @@ class HomeMembers extends StatefulWidget {
 class _HomeMembersState extends State<HomeMembers>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final MembersService _membersService = MembersService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   List<Member> _topMembers = [];
   List<Member> _latestMembers = [];
@@ -27,8 +27,8 @@ class _HomeMembersState extends State<HomeMembers>
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final top = await _membersService.getTopMembers();
-    final latest = await _membersService.getLatestMembers();
+    final top = await _databaseHelper.getTopMembers();
+    final latest = await _databaseHelper.getLatestMembers();
 
     if (mounted) {
       setState(() {

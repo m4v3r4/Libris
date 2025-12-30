@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/members/models/member.dart';
-import 'package:libris/features/members/services/members_service.dart';
 
 class MemberFormScreen extends StatefulWidget {
   final Member? member;
@@ -13,8 +13,7 @@ class MemberFormScreen extends StatefulWidget {
 
 class _MemberFormScreenState extends State<MemberFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _memberService = MembersService();
-
+  final DatabaseHelper _memberService = DatabaseHelper.instance;
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;

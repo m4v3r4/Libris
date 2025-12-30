@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/members/models/member.dart';
 import 'package:libris/features/members/screens/member_form_screen.dart';
-import 'package:libris/features/members/services/members_service.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final Member member;
@@ -13,7 +13,7 @@ class MemberDetailScreen extends StatefulWidget {
 }
 
 class _MemberDetailScreenState extends State<MemberDetailScreen> {
-  final MembersService _memberService = MembersService();
+  final DatabaseHelper _memberService = DatabaseHelper.instance;
   late Member _member;
 
   @override

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-import 'package:libris/features/books/services/book_service.dart';
 import 'package:libris/features/settings/services/category_service.dart';
 
 class CategoryBooksScreen extends StatefulWidget {
@@ -13,7 +12,8 @@ class CategoryBooksScreen extends StatefulWidget {
 }
 
 class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
-  final BookService _bookService = BookService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
+
   late CategoryService _categoryService;
 
   List<Book> _books = [];
@@ -29,7 +29,9 @@ class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
   Future<void> _loadBooks() async {
     setState(() => _isLoading = true);
     try {
-      final books = await _bookService.getBooksByCategory(widget.categoryName);
+      final books = await _databaseHelper.getBooksByCategory(
+        widget.categoryName,
+      );
       if (mounted) {
         setState(() {
           _books = books;
@@ -91,7 +93,7 @@ class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (selectedCategory != null) {
-                  await _bookService.updateBookCategory(
+                  await _databaseHelper.updateBookCategory(
                     book.id!,
                     selectedCategory!,
                   );

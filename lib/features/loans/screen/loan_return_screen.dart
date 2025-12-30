@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:libris/features/loans/services/loan_service.dart';
+import 'package:libris/common/services/database_helper.dart';
 
 class LoanReturnScreen extends StatefulWidget {
   final Map<String, dynamic> loan;
@@ -11,7 +11,7 @@ class LoanReturnScreen extends StatefulWidget {
 }
 
 class _LoanReturnScreenState extends State<LoanReturnScreen> {
-  final LoanService _loanService = LoanService();
+  final DatabaseHelper _loanService = DatabaseHelper.instance;
   bool _isProcessing = false;
 
   Future<void> _handleReturn() async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-import 'package:libris/features/books/services/book_service.dart';
 
 class HomeBook extends StatefulWidget {
   const HomeBook({super.key});
@@ -12,7 +12,7 @@ class HomeBook extends StatefulWidget {
 class _HomeBookState extends State<HomeBook>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final BookService _bookService = BookService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   List<Book> _topBooks = [];
   List<Book> _latestBooks = [];
@@ -29,8 +29,8 @@ class _HomeBookState extends State<HomeBook>
     setState(() => _isLoading = true);
     try {
       // BookService'de bu metodların olduğunu varsayıyoruz
-      final top = await _bookService.getTopBooks();
-      final latest = await _bookService.getLatestBooks();
+      final top = await _databaseHelper.getTopBooks();
+      final latest = await _databaseHelper.getLatestBooks();
 
       if (mounted) {
         setState(() {
