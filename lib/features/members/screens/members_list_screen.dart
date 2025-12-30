@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/models/Member.dart';
 import 'package:libris/common/services/database_helper.dart';
-import 'package:libris/features/members/models/member.dart';
 import 'package:libris/features/members/screens/member_detail_screen.dart';
 
 class MembersListScreen extends StatefulWidget {

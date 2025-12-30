@@ -1,8 +1,8 @@
+import 'package:libris/common/models/Member.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:libris/features/members/models/member.dart';
 import 'package:libris/common/models/loan.dart';
 import 'package:libris/features/books/models/book.dart';
 

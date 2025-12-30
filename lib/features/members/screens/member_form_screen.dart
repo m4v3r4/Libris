@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/models/Member.dart' show Member;
 import 'package:libris/common/services/database_helper.dart';
-import 'package:libris/features/members/models/member.dart';
 
 class MemberFormScreen extends StatefulWidget {
   final Member? member;

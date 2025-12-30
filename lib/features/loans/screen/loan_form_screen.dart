@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/models/Member.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
 import 'package:libris/common/models/loan.dart';
-import 'package:libris/features/members/models/member.dart';
 
 class LoanFormScreen extends StatefulWidget {
   final Loan? loan;
