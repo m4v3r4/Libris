@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:libris/common/services/database_helper.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:libris/common/providers/database_provider.dart';
+import 'package:provider/provider.dart';
 
 class HomeLoan extends StatefulWidget {
   const HomeLoan({super.key});
@@ -8,43 +9,51 @@ class HomeLoan extends StatefulWidget {
   State<HomeLoan> createState() => _HomeLoanState();
 }
 
-class _HomeLoanState extends State<HomeLoan>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
-
-  List<Map<String, dynamic>> _overdueLoans = [];
-  List<Map<String, dynamic>> _recentLoans = [];
-  bool _isLoading = true;
+class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  DatabaseProvider? _provider;
+  late Future<List<List<Map<String, dynamic>>>> _statsFuture;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadData();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final overdue = await _databaseHelper.getOverdueLoans();
-      final recent = await _databaseHelper.getRecentLoans();
-      if (mounted) {
-        setState(() {
-          _overdueLoans = overdue;
-          _recentLoans = recent;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextProvider = context.read<DatabaseProvider>();
+
+    if (!identical(_provider, nextProvider)) {
+      _provider?.removeListener(_onDatabaseChanged);
+      _provider = nextProvider;
+      _provider!.addListener(_onDatabaseChanged);
+      _reload();
     }
   }
 
   @override
   void dispose() {
+    _provider?.removeListener(_onDatabaseChanged);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onDatabaseChanged() {
+    _reload();
+  }
+
+  void _reload() {
+    final provider = _provider;
+    if (provider == null) return;
+
+    setState(() {
+      _statsFuture = Future.wait([
+        provider.db.getOverdueLoans(),
+        provider.db.getRecentLoans(),
+      ]);
+    });
   }
 
   @override
@@ -52,44 +61,67 @@ class _HomeLoanState extends State<HomeLoan>
     return Card(
       child: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Emanet Durumu',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _reload,
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Yenile',
+                ),
+              ],
+            ),
+          ),
           TabBar(
             controller: _tabController,
-
             tabs: const [
               Tab(text: 'Gecikenler'),
-              Tab(text: 'Son İşlemler'),
+              Tab(text: 'Son Islemler'),
             ],
           ),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildList(_overdueLoans, isOverdue: true),
-                      _buildList(_recentLoans),
-                    ],
-                  ),
+            child: FutureBuilder<List<List<Map<String, dynamic>>>>(
+              future: _statsFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final data = snapshot.data!;
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildList(data[0], isOverdue: true),
+                    _buildList(data[1]),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildList(
-    List<Map<String, dynamic>> items, {
-    bool isOverdue = false,
-  }) {
+  Widget _buildList(List<Map<String, dynamic>> items, {bool isOverdue = false}) {
     if (items.isEmpty) {
-      return const Center(child: Text('Kayıt bulunamadı.'));
+      return const Center(child: Text('Kayit bulunamadi.'));
     }
+
     return ListView.separated(
       itemCount: items.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = items[index];
-        final bookTitle = item['bookTitle'] ?? 'Kitap Silinmiş';
-        final memberName = item['memberName'] ?? 'Üye Silinmiş';
+        final bookTitle = item['bookTitle']?.toString() ?? 'Kitap silinmis';
+        final memberName = item['memberName']?.toString() ?? 'Uye silinmis';
 
         IconData icon;
         Color color;
@@ -99,10 +131,10 @@ class _HomeLoanState extends State<HomeLoan>
           final date = item['dueDate'];
           final dateStr = date != null && date.toString().length > 10
               ? date.toString().substring(0, 10)
-              : date.toString();
+              : (date?.toString() ?? '-');
           icon = Icons.warning_amber_rounded;
           color = Colors.red;
-          subtitle = '$memberName\nSon Gün: $dateStr';
+          subtitle = '$memberName\nSon gun: $dateStr';
         } else {
           final isReturned = item['returnedAt'] != null;
           final date = item['updatedAt'];
@@ -113,17 +145,21 @@ class _HomeLoanState extends State<HomeLoan>
           if (isReturned) {
             icon = Icons.check_circle_outline;
             color = Colors.green;
-            subtitle = 'Teslim Alındı: $memberName\n$dateStr';
+            subtitle = 'Teslim alindi: $memberName\n$dateStr';
           } else {
             icon = Icons.arrow_circle_right_outlined;
             color = Colors.blue;
-            subtitle = 'Teslim Edildi: $memberName\n$dateStr';
+            subtitle = 'Teslim edildi: $memberName\n$dateStr';
           }
         }
 
         return ListTile(
           leading: Icon(icon, color: color),
-          title: Text(bookTitle),
+          title: Text(
+            bookTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text(subtitle),
           isThreeLine: true,
           dense: true,
@@ -132,3 +168,4 @@ class _HomeLoanState extends State<HomeLoan>
     );
   }
 }
+

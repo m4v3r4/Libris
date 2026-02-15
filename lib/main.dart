@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:libris/features/home/screens/home_screen.dart'; // HomeScreen'i import edin
-import 'package:libris/features/settings/services/settings_service.dart';
+import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/common/services/database_helper.dart';
+import 'package:libris/common/theme/app_theme.dart';
+import 'package:libris/features/home/screens/home_screen.dart';
+import 'package:libris/features/settings/services/settings_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() async {
@@ -13,16 +16,19 @@ void main() async {
 
   await DatabaseHelper.instance.database;
 
-  // Kayıtlı temayı yükle
   final settingsService = SettingsService();
   final theme = await settingsService.getTheme();
   appThemeNotifier.value = theme;
 
-  // Kayıtlı dili yükle
   final lang = await settingsService.getLanguage();
   appLanguageNotifier.value = lang;
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => DatabaseProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -35,16 +41,14 @@ class MyApp extends StatelessWidget {
       builder: (context, mode, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Libris Kütüphane',
+          title: 'Libris Kutuphane',
           themeMode: mode,
-          darkTheme: ThemeData.dark(),
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-          ),
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
           home: const HomeScreen(),
         );
       },
     );
   }
 }
+

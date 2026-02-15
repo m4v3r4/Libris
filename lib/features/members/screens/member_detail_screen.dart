@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:libris/common/models/Member.dart';
-import 'package:libris/common/services/database_helper.dart';
+import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/members/screens/member_form_screen.dart';
 
 class MemberDetailScreen extends StatefulWidget {
@@ -13,7 +14,6 @@ class MemberDetailScreen extends StatefulWidget {
 }
 
 class _MemberDetailScreenState extends State<MemberDetailScreen> {
-  final DatabaseHelper _memberService = DatabaseHelper.instance;
   late Member _member;
 
   @override
@@ -29,7 +29,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     );
 
     if (result == true) {
-      final updated = await _memberService.getMemberById(_member.id!);
+      // Veriyi güncellemek için provider'dan veya db'den tekrar çekebiliriz
+      final updated = await context.read<DatabaseProvider>().db.getMemberById(
+        _member.id!,
+      );
       if (updated != null) {
         setState(() => _member = updated);
       }
@@ -56,7 +59,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     );
 
     if (confirmed == true) {
-      await _memberService.deleteMember(_member.id!);
+      await context.read<DatabaseProvider>().deleteMember(_member.id!);
       if (mounted) Navigator.pop(context, true);
     }
   }

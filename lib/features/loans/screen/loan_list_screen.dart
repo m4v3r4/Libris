@@ -1,20 +1,23 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:libris/common/models/loan.dart';
-import 'package:libris/common/services/database_helper.dart';
+import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
 import 'package:libris/features/loans/widgets/loan_card.dart';
+import 'package:provider/provider.dart';
 
 enum LoanFilterStatus { all, active, overdue, returned }
 
 class LoanListScreen extends StatefulWidget {
-  const LoanListScreen({super.key});
+  final bool embedded;
+  final VoidCallback? onClose;
+
+  const LoanListScreen({super.key, this.embedded = false, this.onClose});
 
   @override
   State<LoanListScreen> createState() => _LoanListScreenState();
 }
 
 class _LoanListScreenState extends State<LoanListScreen> {
-  final DatabaseHelper _loanService = DatabaseHelper.instance;
   List<Loan> _allLoans = [];
   List<Loan> _filteredLoans = [];
   LoanFilterStatus _filterStatus = LoanFilterStatus.all;
@@ -28,8 +31,10 @@ class _LoanListScreenState extends State<LoanListScreen> {
   }
 
   Future<void> _loadLoans() async {
+    final dbProvider = context.read<DatabaseProvider>();
     setState(() => _isLoading = true);
-    final loans = await _loanService.getLoans();
+    final loans = await dbProvider.getLoans();
+
     if (mounted) {
       setState(() {
         _allLoans = loans;
@@ -42,16 +47,13 @@ class _LoanListScreenState extends State<LoanListScreen> {
   void _applyFilters() {
     List<Loan> result = _allLoans;
 
-    // Durum Filtresi
     switch (_filterStatus) {
       case LoanFilterStatus.active:
         result = result.where((l) => l.returnedAt == null).toList();
         break;
       case LoanFilterStatus.overdue:
         final now = DateTime.now();
-        result = result
-            .where((l) => l.returnedAt == null && now.isAfter(l.dueDate))
-            .toList();
+        result = result.where((l) => l.returnedAt == null && now.isAfter(l.dueDate)).toList();
         break;
       case LoanFilterStatus.returned:
         result = result.where((l) => l.returnedAt != null).toList();
@@ -60,19 +62,14 @@ class _LoanListScreenState extends State<LoanListScreen> {
         break;
     }
 
-    // Tarih Aralığı Filtresi (Veriliş Tarihine Göre)
     if (_dateRange != null) {
       result = result.where((l) {
-        return l.loanDate.isAfter(
-              _dateRange!.start.subtract(const Duration(days: 1)),
-            ) &&
+        return l.loanDate.isAfter(_dateRange!.start.subtract(const Duration(days: 1))) &&
             l.loanDate.isBefore(_dateRange!.end.add(const Duration(days: 1)));
       }).toList();
     }
 
-    setState(() {
-      _filteredLoans = result;
-    });
+    _filteredLoans = result;
   }
 
   Future<void> _openForm() async {
@@ -84,7 +81,8 @@ class _LoanListScreenState extends State<LoanListScreen> {
   }
 
   Future<void> _returnLoan(Loan loan) async {
-    await _loanService.returnLoan(loan.id!);
+    if (loan.id == null) return;
+    await context.read<DatabaseProvider>().returnLoan(loan.id!);
     _loadLoans();
   }
 
@@ -106,23 +104,31 @@ class _LoanListScreenState extends State<LoanListScreen> {
   String _getStatusLabel(LoanFilterStatus status) {
     switch (status) {
       case LoanFilterStatus.all:
-        return 'Tümü';
+        return 'Tumu';
       case LoanFilterStatus.active:
         return 'Emanette';
       case LoanFilterStatus.overdue:
-        return 'Gecikmiş';
+        return 'Gecikmis';
       case LoanFilterStatus.returned:
-        return 'İade Edilen';
+        return 'Iade Edilen';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Emanetler')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: widget.embedded
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
+              )
+            : null,
+        title: widget.embedded ? null : const Text('Emanetler'),
+      ),
       body: Column(
         children: [
-          // Filtreleme Alanı
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(8.0),
@@ -132,7 +138,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
                   avatar: const Icon(Icons.calendar_today, size: 16),
                   label: Text(
                     _dateRange == null
-                        ? 'Tarih Aralığı'
+                        ? 'Tarih Araligi'
                         : '${_dateRange!.start.day}.${_dateRange!.start.month} - ${_dateRange!.end.day}.${_dateRange!.end.month}',
                   ),
                   onPressed: _pickDateRange,
@@ -168,7 +174,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredLoans.isEmpty
-                ? const Center(child: Text('Kayıt bulunamadı'))
+                ? const Center(child: Text('Kayit bulunamadi'))
                 : ListView.builder(
                     itemCount: _filteredLoans.length,
                     itemBuilder: (context, index) {
@@ -189,3 +195,4 @@ class _LoanListScreenState extends State<LoanListScreen> {
     );
   }
 }
+

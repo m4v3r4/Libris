@@ -1,98 +1,85 @@
 import 'package:flutter/material.dart';
-import 'package:libris/common/services/database_helper.dart';
-import 'package:libris/features/books/screen/book_list_screen.dart';
-import 'package:libris/features/loans/screen/loan_list_screen.dart';
-import 'package:libris/features/members/screens/members_list_screen.dart';
-import 'package:libris/features/settings/screen/category_manager_screen.dart';
-import 'package:libris/features/settings/services/category_service.dart';
-import 'package:libris/features/settings/screen/settings_screen.dart';
 
-class Leftbar extends StatefulWidget {
-  const Leftbar({super.key});
-
-  @override
-  State<Leftbar> createState() => _LeftbarState();
+enum LeftbarDestination {
+  books,
+  members,
+  loans,
+  categories,
+  settings,
 }
 
-class _LeftbarState extends State<Leftbar> {
+class Leftbar extends StatelessWidget {
+  final ValueChanged<LeftbarDestination> onSelect;
+  final LeftbarDestination? selected;
+
+  const Leftbar({super.key, required this.onSelect, this.selected});
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Card(
-      semanticContainer: true,
-      clipBehavior: Clip.antiAliasWithSaveLayer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-      elevation: 5,
-      margin: const EdgeInsets.all(10),
+      margin: const EdgeInsets.all(8),
       child: Column(
         children: [
-          LeftBarItem(
-            icon: Icons.book,
-            title: 'Kitaplar',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const BookListScreen()),
-              );
-            },
-          ),
-          LeftBarItem(
-            icon: Icons.people,
-            title: 'Üyeler',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MembersListScreen(),
-                ),
-              );
-            },
-          ),
-          LeftBarItem(
-            icon: Icons.transform,
-            title: 'Emanetler',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoanListScreen()),
-              );
-            },
-          ),
-          LeftBarItem(
-            icon: Icons.category,
-            title: 'Kategoriler',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CategoryManagerScreen(
-                    service: CategoryService(
-                      () => DatabaseHelper.instance.database,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          LeftBarItem(
-            icon: Icons.settings,
-            title: 'Ayarlar',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-          ),
-
           Container(
-            height: 50.0,
-
-            child: const Center(
-              child: Text(
-                'Libris v1.0',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              color: scheme.primaryContainer.withValues(alpha: 0.55),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Libris', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 2),
+                Text('Kutuphane Yonetimi', style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                _LeftBarItem(
+                  icon: Icons.menu_book_rounded,
+                  title: 'Kitaplar',
+                  selected: selected == LeftbarDestination.books,
+                  onTap: () => onSelect(LeftbarDestination.books),
+                ),
+                _LeftBarItem(
+                  icon: Icons.groups_2_rounded,
+                  title: 'Uyeler',
+                  selected: selected == LeftbarDestination.members,
+                  onTap: () => onSelect(LeftbarDestination.members),
+                ),
+                _LeftBarItem(
+                  icon: Icons.swap_horiz_rounded,
+                  title: 'Emanetler',
+                  selected: selected == LeftbarDestination.loans,
+                  onTap: () => onSelect(LeftbarDestination.loans),
+                ),
+                _LeftBarItem(
+                  icon: Icons.category_rounded,
+                  title: 'Kategoriler',
+                  selected: selected == LeftbarDestination.categories,
+                  onTap: () => onSelect(LeftbarDestination.categories),
+                ),
+                _LeftBarItem(
+                  icon: Icons.settings_rounded,
+                  title: 'Ayarlar',
+                  selected: selected == LeftbarDestination.settings,
+                  onTap: () => onSelect(LeftbarDestination.settings),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Text('v1.0.1', style: Theme.of(context).textTheme.labelSmall),
           ),
         ],
       ),
@@ -100,36 +87,44 @@ class _LeftbarState extends State<Leftbar> {
   }
 }
 
-class LeftBarItem extends StatelessWidget {
+class _LeftBarItem extends StatelessWidget {
   final IconData icon;
   final String title;
+  final bool selected;
   final VoidCallback onTap;
 
-  const LeftBarItem({
-    super.key,
+  const _LeftBarItem({
     required this.icon,
     required this.title,
+    required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        focusColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        hoverColor: Colors.transparent,
-        onTap: onTap,
-        child: Container(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [Icon(icon), const SizedBox(height: 8.0), Text(title)],
-            ),
-          ),
+    final scheme = Theme.of(context).colorScheme;
+    final activeColor = scheme.primary;
+
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, size: 20, color: selected ? activeColor : null),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          color: selected ? activeColor : null,
         ),
       ),
+      trailing: selected
+          ? Icon(Icons.radio_button_checked_rounded, size: 14, color: activeColor)
+          : const Icon(Icons.chevron_right_rounded, size: 18),
+      selected: selected,
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
     );
   }
 }
+
+

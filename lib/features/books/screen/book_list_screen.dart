@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-
 import 'package:libris/features/books/screen/book_detail_screen.dart';
 import 'package:libris/features/books/screen/book_form_screen.dart';
 import 'package:libris/features/books/widgets/book_item_widget.dart';
@@ -9,7 +8,10 @@ import 'package:libris/features/books/widgets/book_item_widget.dart';
 enum BookSortType { titleAsc, titleDesc, newest }
 
 class BookListScreen extends StatefulWidget {
-  const BookListScreen({super.key});
+  final bool embedded;
+  final VoidCallback? onClose;
+
+  const BookListScreen({super.key, this.embedded = false, this.onClose});
 
   @override
   State<BookListScreen> createState() => _BookListScreenState();
@@ -41,7 +43,7 @@ class _BookListScreenState extends State<BookListScreen> {
   }
 
   List<Book> get _filteredBooks {
-    List<Book> list = _books.where((book) {
+    final list = _books.where((book) {
       final query = _searchQuery.toLowerCase();
       return book.title.toLowerCase().contains(query) ||
           book.author.toLowerCase().contains(query);
@@ -66,40 +68,54 @@ class _BookListScreenState extends State<BookListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kitap Listesi'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _viewType == BookViewType.list
-                  ? Icons.view_module
-                  : Icons.view_list,
-            ),
-            onPressed: () {
-              setState(() {
-                _viewType = _viewType == BookViewType.list
-                    ? BookViewType.card
-                    : BookViewType.list;
-              });
-            },
-          ),
-          PopupMenuButton<BookSortType>(
-            onSelected: (value) {
-              setState(() => _sortType = value);
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: BookSortType.titleAsc, child: Text('A → Z')),
-              PopupMenuItem(
-                value: BookSortType.titleDesc,
-                child: Text('Z → A'),
-              ),
-              PopupMenuItem(value: BookSortType.newest, child: Text('En Yeni')),
-            ],
-          ),
-        ],
+        automaticallyImplyLeading: false,
+        leading: widget.embedded
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
+              )
+            : null,
+        title: widget.embedded ? null : const Text('Kitap Listesi'),
+        actions: widget.embedded
+            ? null
+            : [
+                IconButton(
+                  icon: Icon(
+                    _viewType == BookViewType.list
+                        ? Icons.view_module
+                        : Icons.view_list,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _viewType = _viewType == BookViewType.list
+                          ? BookViewType.card
+                          : BookViewType.list;
+                    });
+                  },
+                ),
+                PopupMenuButton<BookSortType>(
+                  onSelected: (value) {
+                    setState(() => _sortType = value);
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: BookSortType.titleAsc,
+                      child: Text('A -> Z'),
+                    ),
+                    PopupMenuItem(
+                      value: BookSortType.titleDesc,
+                      child: Text('Z -> A'),
+                    ),
+                    PopupMenuItem(
+                      value: BookSortType.newest,
+                      child: Text('En Yeni'),
+                    ),
+                  ],
+                ),
+              ],
       ),
       body: Column(
         children: [
-          // 🔍 SEARCH
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -113,13 +129,11 @@ class _BookListScreenState extends State<BookListScreen> {
               },
             ),
           ),
-
-          // 📚 LIST
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredBooks.isEmpty
-                ? const Center(child: Text('Sonuç bulunamadı'))
+                ? const Center(child: Text('Sonuc bulunamadi'))
                 : _viewType == BookViewType.list
                 ? ListView.builder(
                     itemCount: _filteredBooks.length,
@@ -141,26 +155,40 @@ class _BookListScreenState extends State<BookListScreen> {
                       );
                     },
                   )
-                : GridView.builder(
-                    itemCount: _filteredBooks.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 5,
-                    ),
-                    itemBuilder: (context, index) {
-                      final book = _filteredBooks[index];
-                      return BookItemWidget(
-                        book: book,
-                        viewType: _viewType,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BookDetailScreen(book: book),
-                            ),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final crossAxisCount = width >= 1500
+                          ? 5
+                          : width >= 1200
+                          ? 4
+                          : width >= 800
+                          ? 3
+                          : 2;
+
+                      return GridView.builder(
+                        itemCount: _filteredBooks.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: 0.9,
+                        ),
+                        itemBuilder: (context, index) {
+                          final book = _filteredBooks[index];
+                          return BookItemWidget(
+                            book: book,
+                            viewType: _viewType,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BookDetailScreen(book: book),
+                                ),
+                              );
+                            },
+                            onEdit: () => _navigateToEditBook(book),
+                            onDelete: () => _deleteBook(book.id!),
                           );
                         },
-                        onEdit: () => _navigateToEditBook(book),
-                        onDelete: () => _deleteBook(book.id!),
                       );
                     },
                   ),
@@ -195,3 +223,4 @@ class _BookListScreenState extends State<BookListScreen> {
     _loadBooks();
   }
 }
+

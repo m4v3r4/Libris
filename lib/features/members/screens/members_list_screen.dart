@@ -1,10 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:libris/common/models/Member.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/members/screens/member_detail_screen.dart';
+import 'package:libris/features/members/screens/member_form_screen.dart';
 
 class MembersListScreen extends StatefulWidget {
-  const MembersListScreen({super.key});
+  final bool embedded;
+  final VoidCallback? onClose;
+
+  const MembersListScreen({super.key, this.embedded = false, this.onClose});
 
   @override
   State<MembersListScreen> createState() => _MembersListScreenState();
@@ -54,10 +58,17 @@ class _MembersListScreenState extends State<MembersListScreen> {
   }
 
   Future<void> _openForm({Member? member}) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member!)),
-    );
+    if (member == null) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MemberFormScreen()),
+      );
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
+      );
+    }
     _loadMembers();
   }
 
@@ -65,9 +76,14 @@ class _MembersListScreenState extends State<MembersListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Üyeler'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        leading: widget.embedded
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
+              )
+            : null,
+        title: widget.embedded ? null : const Text('Uyeler'),
       ),
       body: Column(
         children: [
@@ -76,7 +92,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
-                hintText: 'Üye ara (isim, e-posta, telefon)',
+                hintText: 'Uye ara (isim, e-posta, telefon)',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
@@ -86,7 +102,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredMembers.isEmpty
-                ? const Center(child: Text('Üye bulunamadı'))
+                ? const Center(child: Text('Uye bulunamadi'))
                 : ListView.builder(
                     itemCount: _filteredMembers.length,
                     itemBuilder: (context, index) {
@@ -95,9 +111,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
                         leading: const Icon(Icons.person),
                         title: Text(member.name),
                         subtitle: Text(
-                          member.email ??
-                              member.phone ??
-                              'İletişim bilgisi yok',
+                          member.email ?? member.phone ?? 'Iletisim bilgisi yok',
                         ),
                         onTap: () => _openForm(member: member),
                       );
@@ -113,3 +127,4 @@ class _MembersListScreenState extends State<MembersListScreen> {
     );
   }
 }
+
