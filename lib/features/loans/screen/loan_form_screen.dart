@@ -15,7 +15,6 @@ class LoanFormScreen extends StatefulWidget {
 
 class _LoanFormScreenState extends State<LoanFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final DatabaseHelper _loanService = DatabaseHelper.instance;
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
   // BookService'in projenizde var olduğunu varsayıyoruz
 
@@ -81,9 +80,9 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
 
     try {
       if (widget.loan != null) {
-        await _loanService.updateLoan(loan);
+        await _databaseHelper.updateLoan(loan);
       } else {
-        await _loanService.createLoan(loan);
+        await _databaseHelper.createLoan(loan);
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {

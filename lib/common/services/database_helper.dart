@@ -31,9 +31,116 @@ class DatabaseHelper {
     );
 
     await _ensureMembersTable(db);
-    await _ensureLoansTable(db);
     await _ensureBooksTable(db);
+    await _ensureLoansTable(db);
+    await _ensureCategoriesTable(db);
     return db;
+  }
+  // --- CATEGORIES ---
+
+  /// Kategoriler tablosunu oluşturur ve varsa kitaplardan veri aktarır
+  Future<void> _ensureCategoriesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+      )
+    ''');
+
+    // Migration: Mevcut kitaplardaki kategorileri buraya aktar
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM categories'),
+    );
+    if (count == 0) {
+      try {
+        final result = await db.rawQuery(
+          "SELECT DISTINCT category FROM books WHERE category IS NOT NULL AND category != ''",
+        );
+
+        final batch = db.batch();
+        for (var row in result) {
+          batch.insert('categories', {
+            'name': row['category'],
+          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+        await batch.commit(noResult: true);
+      } catch (e) {
+        print('Migration uyarısı: $e');
+      }
+    }
+  }
+
+  /// Kategorileri ve kitap sayılarını getir
+  Future<List<Map<String, dynamic>>> getCategoriesWithStats() async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT c.id, c.name, 
+      (SELECT COUNT(*) FROM books b WHERE b.category = c.name) as book_count
+      FROM categories c
+      ORDER BY c.name ASC
+    ''');
+  }
+
+  /// Sadece kategori isimlerini getir
+  Future<List<String>> getCategoryNames() async {
+    final db = await database;
+    final result = await db.query(
+      'categories',
+      columns: ['name'],
+      orderBy: 'name ASC',
+    );
+    return result.map((e) => e['name'] as String).toList();
+  }
+
+  /// Yeni kategori ekle
+  Future<int> addCategory(String name) async {
+    final db = await database;
+    return await db.insert('categories', {'name': name});
+  }
+
+  /// Kategori güncelle (Kitaplardaki kategori ismini de günceller)
+  Future<int> updateCategory(int id, String newName) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final oldNameMap = await txn.query(
+        'categories',
+        columns: ['name'],
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      if (oldNameMap.isNotEmpty) {
+        final oldName = oldNameMap.first['name'] as String;
+        await txn.update(
+          'books',
+          {'category': newName},
+          where: 'category = ?',
+          whereArgs: [oldName],
+        );
+      }
+      await txn.update(
+        'categories',
+        {'name': newName},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
+    return id;
+  }
+
+  /// Kategori sil (Eğer kitap varsa hata fırlatır)
+  Future<void> deleteCategory(int id, String name) async {
+    final db = await database;
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM books WHERE category = ?', [
+        name,
+      ]),
+    );
+    if (count != null && count > 0) {
+      throw Exception(
+        'Bu kategoriye ait $count adet kitap var. Önce kitapların kategorisini değiştirin.',
+      );
+    }
+    await db.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 
   // --- MEMBERS ---
@@ -95,6 +202,14 @@ class DatabaseHelper {
   /// Üyeyi sil
   Future<int> deleteMember(int id) async {
     final db = await database;
+    final loanCount = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM loans WHERE memberId = ?', [id]),
+    );
+    if ((loanCount ?? 0) > 0) {
+      throw Exception(
+        'Bu Ã¼yenin emanet geÃ§miÅŸi olduÄŸu iÃ§in silinemez. Ã–nce emanet kayÄ±tlarÄ±nÄ± temizleyin.',
+      );
+    }
     return await db.delete('members', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -146,46 +261,95 @@ class DatabaseHelper {
         dueDate TEXT NOT NULL,
         returnedAt TEXT,
         createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (bookId) REFERENCES books(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+        FOREIGN KEY (memberId) REFERENCES members(id) ON UPDATE CASCADE ON DELETE RESTRICT
       )
     ''');
+
+    await _ensureLoansForeignKeys(db);
+  }
+
+  Future<void> _ensureLoansForeignKeys(Database db) async {
+    final fkRows = await db.rawQuery('PRAGMA foreign_key_list(loans)');
+    if (fkRows.isNotEmpty) return;
+
+    await db.transaction((txn) async {
+      await txn.execute('ALTER TABLE loans RENAME TO loans_old');
+      await txn.execute('''
+        CREATE TABLE loans (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          bookId INTEGER NOT NULL,
+          memberId INTEGER NOT NULL,
+          loanDate TEXT NOT NULL,
+          dueDate TEXT NOT NULL,
+          returnedAt TEXT,
+          createdAt TEXT NOT NULL,
+          updatedAt TEXT NOT NULL,
+          FOREIGN KEY (bookId) REFERENCES books(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+          FOREIGN KEY (memberId) REFERENCES members(id) ON UPDATE CASCADE ON DELETE RESTRICT
+        )
+      ''');
+      await txn.execute('''
+        INSERT INTO loans (id, bookId, memberId, loanDate, dueDate, returnedAt, createdAt, updatedAt)
+        SELECT id, bookId, memberId, loanDate, dueDate, returnedAt, createdAt, updatedAt
+        FROM loans_old
+      ''');
+      await txn.execute('DROP TABLE loans_old');
+    });
   }
 
   /// Yeni emanet oluştur (Kitap müsaitlik kontrolü ile)
   Future<int> createLoan(Loan loan) async {
     final db = await database;
-    final active = await db.query(
-      'loans',
-      where: 'bookId = ? AND returnedAt IS NULL',
-      whereArgs: [loan.bookId],
-    );
+    return await db.transaction((txn) async {
+      final active = await txn.query(
+        'loans',
+        where: 'bookId = ? AND returnedAt IS NULL',
+        whereArgs: [loan.bookId],
+      );
 
-    if (active.isNotEmpty) {
-      throw Exception('Bu kitap şu anda emanet verilmiş durumda.');
-    }
+      if (active.isNotEmpty) {
+        throw Exception('Bu kitap şu anda emanet verilmiş durumda.');
+      }
 
-    final id = await db.insert('loans', loan.toMap());
+      final id = await txn.insert('loans', loan.toMap());
 
-    // Kitabın durumunu 'Emanette' (isAvailable = 0) olarak güncelle
-    await db.update(
-      'books',
-      {'isAvailable': 0, 'updatedAt': DateTime.now().toIso8601String()},
-      where: 'id = ?',
-      whereArgs: [loan.bookId],
-    );
+      // Kitabın durumunu 'Emanette' (isAvailable = 0) olarak güncelle
+      await txn.update(
+        'books',
+        {'isAvailable': 0, 'updatedAt': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [loan.bookId],
+      );
 
-    return id;
+      return id;
+    });
   }
 
   /// Emanet kaydını güncelle
   Future<int> updateLoan(Loan loan) async {
     final db = await database;
-    return await db.update(
-      'loans',
-      loan.toMap(),
-      where: 'id = ?',
-      whereArgs: [loan.id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.update(
+        'loans',
+        loan.toMap(),
+        where: 'id = ?',
+        whereArgs: [loan.id],
+      );
+
+      // İade edildiyse (returnedAt doluysa) kitabın durumunu güncelle
+      if (loan.returnedAt != null) {
+        await txn.update(
+          'books',
+          {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+          where: 'id = ?',
+          whereArgs: [loan.bookId],
+        );
+      }
+
+      return result;
+    });
   }
 
   /// Tüm emanetleri getir
@@ -235,37 +399,37 @@ class DatabaseHelper {
   /// Kitabı iade al (Tarihi güncelle ve kitabı müsait yap)
   Future<int> returnLoan(int loanId) async {
     final db = await database;
-
-    // 1. Emanet kaydını kapat
-    final result = await db.update(
-      'loans',
-      {
-        'returnedAt': DateTime.now().toIso8601String(),
-        'updatedAt': DateTime.now().toIso8601String(),
-      },
-      where: 'id = ?',
-      whereArgs: [loanId],
-    );
-
-    // 2. Kitabın durumunu 'Müsait' (isAvailable = 1) yap
-    // Önce loanId'den bookId'yi bulmamız lazım
-    final loanMaps = await db.query(
-      'loans',
-      columns: ['bookId'],
-      where: 'id = ?',
-      whereArgs: [loanId],
-    );
-    if (loanMaps.isNotEmpty) {
-      final bookId = loanMaps.first['bookId'] as int;
-      await db.update(
-        'books',
-        {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+    return await db.transaction((txn) async {
+      // 1. Emanet kaydını kapat
+      final result = await txn.update(
+        'loans',
+        {
+          'returnedAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
         where: 'id = ?',
-        whereArgs: [bookId],
+        whereArgs: [loanId],
       );
-    }
 
-    return result;
+      // 2. Kitabın durumunu 'Müsait' (isAvailable = 1) yap
+      // Önce loanId'den bookId'yi bulmamız lazım
+      final loanMaps = await txn.query(
+        'loans',
+        columns: ['bookId'],
+        where: 'id = ?',
+        whereArgs: [loanId],
+      );
+      if (loanMaps.isNotEmpty) {
+        final bookId = loanMaps.first['bookId'] as int;
+        await txn.update(
+          'books',
+          {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+          where: 'id = ?',
+          whereArgs: [bookId],
+        );
+      }
+      return result;
+    });
   }
 
   /// Gecikmiş (teslim tarihi geçmiş ve iade edilmemiş) emanetleri getir
@@ -415,6 +579,14 @@ class DatabaseHelper {
   /// Kitabı sil
   Future<int> deleteBook(int id) async {
     final db = await database;
+    final loanCount = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM loans WHERE bookId = ?', [id]),
+    );
+    if ((loanCount ?? 0) > 0) {
+      throw Exception(
+        'Bu kitabÄ±n emanet geÃ§miÅŸi olduÄŸu iÃ§in silinemez. Ã–nce emanet kayÄ±tlarÄ±nÄ± temizleyin.',
+      );
+    }
     return await db.delete('books', where: 'id = ?', whereArgs: [id]);
   }
 

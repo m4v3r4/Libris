@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:libris/features/dbeditor/services/database_inspector_service.dart';
 import 'package:libris/features/dbeditor/widgets/table_view.dart';
 import 'package:libris/features/settings/screen/category_manager_screen.dart';
-import 'package:libris/features/settings/services/category_service.dart';
 
 class DatabaseHomeScreen extends StatefulWidget {
   const DatabaseHomeScreen({super.key});
@@ -173,11 +172,7 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
     // Geçici olarak inspector service'in kullandığı DB yolunu varsayıyoruz.
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => CategoryManagerScreen(
-          service: CategoryService(_service.getDatabase),
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => CategoryManagerScreen()),
     );
   }
 

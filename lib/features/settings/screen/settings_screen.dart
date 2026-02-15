@@ -3,44 +3,51 @@ import 'package:libris/features/dbeditor/screen/database_home_screen.dart';
 import 'package:libris/features/settings/services/settings_service.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final bool embedded;
+  final VoidCallback? onClose;
+
+  const SettingsScreen({super.key, this.embedded = false, this.onClose});
 
   @override
   Widget build(BuildContext context) {
-    final SettingsService settingsService = SettingsService();
+    final settingsService = SettingsService();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ayarlar')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: embedded
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: onClose ?? () => Navigator.of(context).pop(),
+              )
+            : null,
+        title: embedded ? null : const Text('Ayarlar'),
+      ),
       body: ListView(
         children: [
-          // TEMA AYARI (SWITCH)
           ValueListenableBuilder<ThemeMode>(
             valueListenable: appThemeNotifier,
             builder: (context, currentMode, child) {
               final isDark = currentMode == ThemeMode.dark;
               return SwitchListTile(
                 secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
-                title: const Text('Karanlık Mod'),
-                subtitle: Text(isDark ? 'Açık' : 'Kapalı'),
+                title: const Text('Karanlik Mod'),
+                subtitle: Text(isDark ? 'Acik' : 'Kapali'),
                 value: isDark,
                 onChanged: (val) {
-                  settingsService.saveTheme(
-                    val ? ThemeMode.dark : ThemeMode.light,
-                  );
+                  settingsService.saveTheme(val ? ThemeMode.dark : ThemeMode.light);
                 },
               );
             },
           ),
           const Divider(),
-
-          // DİL AYARI
           ValueListenableBuilder<String>(
             valueListenable: appLanguageNotifier,
             builder: (context, currentLang, child) {
               return ListTile(
                 leading: const Icon(Icons.language),
                 title: const Text('Dil'),
-                subtitle: Text(currentLang == 'tr' ? 'Türkçe' : 'English'),
+                subtitle: Text(currentLang == 'tr' ? 'Turkce' : 'English'),
                 trailing: DropdownButton<String>(
                   value: currentLang,
                   underline: const SizedBox(),
@@ -56,64 +63,41 @@ class SettingsScreen extends StatelessWidget {
             },
           ),
           const Divider(),
-
-          // VERİTABANI YÖNETİCİSİ
           ListTile(
             leading: const Icon(Icons.storage, color: Colors.blueGrey),
-            title: const Text('Veritabanı Yöneticisi'),
-            subtitle: const Text('Tabloları görüntüle ve düzenle'),
+            title: const Text('Veritabani Yoneticisi'),
+            subtitle: const Text('Tablolari goruntule ve duzenle'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const DatabaseHomeScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const DatabaseHomeScreen()),
               );
             },
           ),
           const Divider(),
-
-          // HAKKINDA
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('Uygulama Hakkında'),
-            subtitle: const Text('Libris v1.0.0'),
+            title: const Text('Uygulama Hakkinda'),
+            subtitle: const Text('Libris v1.0.1'),
             onTap: () {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Row(
-                    children: const [
+                  title: const Row(
+                    children: [
                       Icon(Icons.library_books),
                       SizedBox(width: 8),
                       Text('Libris'),
                     ],
                   ),
-                  content: SingleChildScrollView(
+                  content: const SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Sürüm: 1.0.0',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                      children: [
+                        Text('Surum: 1.0.1', style: TextStyle(fontWeight: FontWeight.bold)),
                         SizedBox(height: 12),
-                        Text('© 2023 Libris Kütüphane Yönetim Sistemi'),
-                        SizedBox(height: 16),
-                        Text(
-                          'Lisans',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Bu yazılım GNU General Public License v3.0 (GPL-3.0) '
-                          'kapsamında lisanslanmıştır.\n\n'
-                          'Bu yazılımı özgürce kullanabilir, inceleyebilir, '
-                          'değiştirebilir ve dağıtabilirsiniz.\n\n'
-                          'Lisansın tamamı için:\n'
-                          'https://www.gnu.org/licenses/gpl-3.0.html',
-                        ),
+                        Text('© 2023 Libris Kutuphane Yonetim Sistemi'),
                       ],
                     ),
                   ),
@@ -132,3 +116,5 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
+
+

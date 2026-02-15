@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-import 'package:libris/features/settings/services/category_service.dart';
 
 class CategoryBooksScreen extends StatefulWidget {
   final String categoryName;
@@ -14,15 +13,13 @@ class CategoryBooksScreen extends StatefulWidget {
 class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
-  late CategoryService _categoryService;
-
   List<Book> _books = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _categoryService = CategoryService(() => DatabaseHelper.instance.database);
+
     _loadBooks();
   }
 
@@ -50,7 +47,7 @@ class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
 
   Future<void> _changeCategory(Book book) async {
     // Tüm kategorileri çek
-    final categories = await _categoryService.getCategoryNames();
+    final categories = await _databaseHelper.getCategoryNames();
     // Mevcut kategoriyi listeden çıkar (zaten orada)
     categories.remove(widget.categoryName);
 

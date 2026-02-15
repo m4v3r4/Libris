@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:libris/common/models/Member.dart' show Member;
-import 'package:libris/common/services/database_helper.dart';
+import 'package:libris/common/providers/database_provider.dart';
 
 class MemberFormScreen extends StatefulWidget {
   final Member? member;
@@ -13,7 +14,6 @@ class MemberFormScreen extends StatefulWidget {
 
 class _MemberFormScreenState extends State<MemberFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final DatabaseHelper _memberService = DatabaseHelper.instance;
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
@@ -70,10 +70,12 @@ class _MemberFormScreenState extends State<MemberFormScreen> {
                 : _addressController.text.trim(),
           );
 
+    final provider = context.read<DatabaseProvider>();
+
     if (isEdit) {
-      await _memberService.updateMember(member);
+      await provider.updateMember(member);
     } else {
-      await _memberService.insertMember(member);
+      await provider.addMember(member);
     }
 
     if (mounted) Navigator.pop(context);
