@@ -3,6 +3,7 @@ import 'package:libris/common/models/loan.dart';
 import 'package:libris/common/models/member.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
+import 'package:libris/features/books/models/book_copy.dart';
 
 class LoanFormScreen extends StatefulWidget {
   final Loan? loan;
@@ -19,8 +20,13 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
 
   Book? _selectedBook;
   Member? _selectedMember;
+  BookCopy? _selectedCopy;
+  List<BookCopy> _availableCopies = [];
+  bool _loadingCopies = false;
 
   DateTime _dueDate = DateTime.now().add(const Duration(days: 14));
+
+  bool get _isEditing => widget.loan != null;
 
   @override
   void initState() {
@@ -32,12 +38,19 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    final book = await _databaseHelper.getBookById(widget.loan!.bookId);
-    final member = await _databaseHelper.getMemberById(widget.loan!.memberId);
+    final loan = widget.loan!;
+    final book = await _databaseHelper.getBookById(loan.bookId);
+    final member = await _databaseHelper.getMemberById(loan.memberId);
+    final copy = loan.copyId == null
+        ? null
+        : await _databaseHelper.getBookCopyById(loan.copyId!);
+
     if (!mounted) return;
     setState(() {
       _selectedBook = book;
       _selectedMember = member;
+      _selectedCopy = copy;
+      _availableCopies = copy == null ? [] : [copy];
     });
   }
 
@@ -53,10 +66,35 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
     setState(() => _dueDate = picked);
   }
 
-  Future<void> _saveLoan() async {
-    if (_selectedBook == null || _selectedMember == null) {
+  Future<void> _selectBook(Book book) async {
+    setState(() {
+      _selectedBook = book;
+      _selectedCopy = null;
+      _availableCopies = [];
+      _loadingCopies = true;
+    });
+
+    final copies = await _databaseHelper.getAvailableBookCopies(book.id!);
+    if (!mounted) return;
+    setState(() {
+      _availableCopies = copies;
+      _selectedCopy = copies.length == 1 ? copies.first : null;
+      _loadingCopies = false;
+    });
+
+    if (copies.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen kitap ve üye seçiniz.')),
+        const SnackBar(content: Text('Bu kitabın müsait fiziksel nüshası yok.')),
+      );
+    }
+  }
+
+  Future<void> _saveLoan() async {
+    if (_selectedBook == null ||
+        _selectedMember == null ||
+        _selectedCopy == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen kitap, nüsha ve üye seçiniz.')),
       );
       return;
     }
@@ -65,13 +103,16 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
       id: widget.loan?.id,
       bookId: _selectedBook!.id!,
       memberId: _selectedMember!.id!,
+      copyId: _selectedCopy!.id,
       loanDate: widget.loan?.loanDate ?? DateTime.now(),
       dueDate: _dueDate,
       returnedAt: widget.loan?.returnedAt,
+      createdAt: widget.loan?.createdAt,
+      updatedAt: DateTime.now(),
     );
 
     try {
-      if (widget.loan != null) {
+      if (_isEditing) {
         await _databaseHelper.updateLoan(loan);
       } else {
         await _databaseHelper.createLoan(loan);
@@ -80,9 +121,9 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
   }
 
@@ -108,6 +149,7 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
   }
 
   void _showBookPicker() {
+    if (_isEditing) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -118,8 +160,8 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
             return _BookSearchSheet(
               bookService: _databaseHelper,
               onSelect: (book) {
-                setState(() => _selectedBook = book);
                 Navigator.pop(context);
+                _selectBook(book);
               },
             );
           },
@@ -128,11 +170,50 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
     );
   }
 
+  void _showCopyPicker() {
+    if (_isEditing || _selectedBook == null || _loadingCopies) return;
+    if (_availableCopies.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seçilebilecek müsait nüsha yok.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(
+              title: Text(
+                'Nüsha Seç',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ..._availableCopies.map(
+              (copy) => ListTile(
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: Text(copy.inventoryCode),
+                subtitle: const Text('Müsait'),
+                selected: _selectedCopy?.id == copy.id,
+                onTap: () {
+                  setState(() => _selectedCopy = copy);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.loan != null ? 'Emanet Düzenle' : 'Emanet Ver'),
+        title: Text(_isEditing ? 'Emanet Düzenle' : 'Emanet Ver'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -141,13 +222,15 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
           child: ListView(
             children: [
               InkWell(
-                onTap: _showBookPicker,
+                onTap: _isEditing ? null : _showBookPicker,
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Kitap Seç',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.book),
-                    suffixIcon: Icon(Icons.arrow_drop_down),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.book),
+                    suffixIcon: _isEditing
+                        ? const Icon(Icons.lock_outline)
+                        : const Icon(Icons.arrow_drop_down),
                   ),
                   child: Text(
                     _selectedBook != null
@@ -155,6 +238,38 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
                         : 'Kitap seçmek için dokunun',
                     style: TextStyle(
                       color: _selectedBook != null ? Colors.black : Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: _showCopyPicker,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Fiziksel Nüsha',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.inventory_2_outlined),
+                    suffixIcon: _isEditing
+                        ? const Icon(Icons.lock_outline)
+                        : _loadingCopies
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : const Icon(Icons.arrow_drop_down),
+                  ),
+                  child: Text(
+                    _selectedCopy?.inventoryCode ??
+                        (_selectedBook == null
+                            ? 'Önce kitap seçiniz'
+                            : 'Nüsha seçmek için dokunun'),
+                    style: TextStyle(
+                      color: _selectedCopy != null ? Colors.black : Colors.grey,
                     ),
                   ),
                 ),
@@ -194,7 +309,7 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _saveLoan,
-                child: Text(widget.loan != null ? 'Güncelle' : 'Emanet Ver'),
+                child: Text(_isEditing ? 'Güncelle' : 'Emanet Ver'),
               ),
             ],
           ),
@@ -294,10 +409,11 @@ class _BookSearchSheetState extends State<_BookSearchSheet> {
 
   Future<void> _loadBooks() async {
     final books = await widget.bookService.getBooks();
+    final availableBooks = books.where((book) => book.isAvailable).toList();
     if (!mounted) return;
     setState(() {
-      _allBooks = books;
-      _filteredBooks = books;
+      _allBooks = availableBooks;
+      _filteredBooks = availableBooks;
     });
   }
 
@@ -319,7 +435,7 @@ class _BookSearchSheetState extends State<_BookSearchSheet> {
         children: [
           TextField(
             decoration: const InputDecoration(
-              hintText: 'Kitap ara (başlık, yazar)...',
+              hintText: 'Müsait kitap ara (başlık, yazar)...',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
             ),
@@ -327,17 +443,20 @@ class _BookSearchSheetState extends State<_BookSearchSheet> {
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: ListView.builder(
-              itemCount: _filteredBooks.length,
-              itemBuilder: (context, index) {
-                final book = _filteredBooks[index];
-                return ListTile(
-                  title: Text(book.title),
-                  subtitle: Text(book.author),
-                  onTap: () => widget.onSelect(book),
-                );
-              },
-            ),
+            child: _filteredBooks.isEmpty
+                ? const Center(child: Text('Müsait kitap bulunamadı'))
+                : ListView.builder(
+                    itemCount: _filteredBooks.length,
+                    itemBuilder: (context, index) {
+                      final book = _filteredBooks[index];
+                      return ListTile(
+                        title: Text(book.title),
+                        subtitle: Text(book.author),
+                        trailing: const Icon(Icons.check_circle_outline),
+                        onTap: () => widget.onSelect(book),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
