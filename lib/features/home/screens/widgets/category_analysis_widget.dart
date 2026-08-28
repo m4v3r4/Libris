@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -59,7 +59,9 @@ class _CategoryAnalysisWidgetState extends State<CategoryAnalysisWidget> {
 
             final stats = snapshot.data ?? const <Map<String, dynamic>>[];
             if (stats.isEmpty) {
-              return const Center(child: Text('Kategori verisi bulunamadi.'));
+              return const Center(
+                child: Text('Kategori verisi bulunamadı.'),
+              );
             }
 
             var totalBooks = 0;
@@ -103,7 +105,7 @@ class _CategoryAnalysisWidgetState extends State<CategoryAnalysisWidget> {
                     _StatChip(label: 'Kategori', value: '${stats.length}'),
                     _StatChip(label: 'Toplam', value: '$totalBooks kitap'),
                     _StatChip(
-                      label: 'En Populer',
+                      label: 'En Popüler',
                       value: mostPopular.length > 16
                           ? '${mostPopular.substring(0, 16)}...'
                           : mostPopular,
@@ -114,7 +116,8 @@ class _CategoryAnalysisWidgetState extends State<CategoryAnalysisWidget> {
                 Expanded(
                   child: ListView.separated(
                     itemCount: stats.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final item = stats[index];
                       final count = item['book_count'] as int;
@@ -130,11 +133,15 @@ class _CategoryAnalysisWidgetState extends State<CategoryAnalysisWidget> {
                                 child: Text(
                                   name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Text('$count (%${(percentage * 100).toStringAsFixed(1)})'),
+                              Text(
+                                '$count (%${(percentage * 100).toStringAsFixed(1)})',
+                              ),
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -187,10 +194,12 @@ class _StatChip extends StatelessWidget {
               color: scheme.onPrimaryContainer,
             ),
           ),
-          Text(label, style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+          Text(
+            label,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+          ),
         ],
       ),
     );
   }
 }
-
