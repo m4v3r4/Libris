@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/home/screens/widgets/category_analysis_widget.dart';
 import 'package:libris/features/settings/screen/category_books_screen.dart';
@@ -28,29 +28,28 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen> {
     setState(() => _isLoading = true);
 
     final data = await service.getCategoriesWithStats();
-    if (mounted) {
-      setState(() {
-        _categories = data;
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _categories = data;
+      _isLoading = false;
+    });
   }
 
   Future<void> _showFormDialog({int? id, String? currentName}) async {
     final controller = TextEditingController(text: currentName);
-    await showDialog(
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(id == null ? 'Kategori Ekle' : 'Kategori Duzenle'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(id == null ? 'Kategori Ekle' : 'Kategori Düzenle'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(labelText: 'Kategori Adi'),
+          decoration: const InputDecoration(labelText: 'Kategori Adı'),
           autofocus: true,
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Iptal'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('İptal'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -63,14 +62,15 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen> {
                 } else {
                   await service.updateCategory(id, name);
                 }
-                if (mounted) Navigator.pop(context);
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
                 _loadData();
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Hata: $e')),
-                  );
-                }
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text('Hata: $e')),
+                );
               }
             },
             child: const Text('Kaydet'),
@@ -78,33 +78,32 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen> {
         ],
       ),
     );
+    controller.dispose();
   }
 
   Future<void> _delete(int id, String name) async {
     try {
       await service.deleteCategory(id, name);
+      if (!mounted) return;
       _loadData();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kategori silindi.')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kategori silindi.')),
+      );
     } catch (e) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Silinemedi'),
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tamam'),
-              ),
-            ],
-          ),
-        );
-      }
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Silinemedi'),
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Tamam'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -121,7 +120,7 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen> {
                   onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
                 )
               : null,
-          title: widget.embedded ? null : const Text('Kategori Yonetimi'),
+          title: widget.embedded ? null : const Text('Kategori Yönetimi'),
           bottom: widget.embedded
               ? null
               : const TabBar(
@@ -150,49 +149,65 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen> {
                   : TabBarView(
                       children: [
                         _categories.isEmpty
-                            ? const Center(child: Text('Henuz kategori eklenmemis.'))
+                            ? const Center(child: Text('Henüz kategori eklenmemiş.'))
                             : ListView.separated(
                                 itemCount: _categories.length,
-                                separatorBuilder: (context, index) => const Divider(height: 1),
+                                separatorBuilder: (context, index) =>
+                                    const Divider(height: 1),
                                 itemBuilder: (context, index) {
                                   final item = _categories[index];
                                   final count = item['book_count'] as int;
+                                  final name = item['name'] as String;
                                   return ListTile(
                                     leading: CircleAvatar(
-                                      child: Text(item['name'].substring(0, 1).toUpperCase()),
+                                      child: Text(
+                                        name.substring(0, 1).toUpperCase(),
+                                      ),
                                     ),
-                                    title: Text(item['name']),
-                                    subtitle: Text('$count kitap kayitli'),
+                                    title: Text(name),
+                                    subtitle: Text('$count kitap kayıtlı'),
                                     onTap: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => CategoryBooksScreen(
-                                            categoryName: item['name'],
-                                          ),
+                                          builder: (context) =>
+                                              CategoryBooksScreen(
+                                                categoryName: name,
+                                              ),
                                         ),
-                                      ).then((_) => _loadData());
+                                      ).then((_) {
+                                        if (mounted) _loadData();
+                                      });
                                     },
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.edit, color: Colors.blue),
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
+                                          ),
                                           onPressed: () => _showFormDialog(
-                                            id: item['id'],
-                                            currentName: item['name'],
+                                            id: item['id'] as int,
+                                            currentName: name,
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete, color: Colors.red),
-                                          onPressed: () => _delete(item['id'], item['name']),
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _delete(item['id'] as int, name),
                                         ),
                                       ],
                                     ),
                                   );
                                 },
                               ),
-                        const SingleChildScrollView(child: CategoryAnalysisWidget()),
+                        const SingleChildScrollView(
+                          child: CategoryAnalysisWidget(),
+                        ),
                       ],
                     ),
             ),
@@ -202,4 +217,3 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen> {
     );
   }
 }
-

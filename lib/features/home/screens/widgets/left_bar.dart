@@ -34,7 +34,10 @@ class Leftbar extends StatelessWidget {
               children: [
                 Text('Libris', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 2),
-                Text('Kutuphane Yonetimi', style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  'Kütüphane Yönetimi',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -51,7 +54,7 @@ class Leftbar extends StatelessWidget {
                 ),
                 _LeftBarItem(
                   icon: Icons.groups_2_rounded,
-                  title: 'Uyeler',
+                  title: 'Üyeler',
                   selected: selected == LeftbarDestination.members,
                   onTap: () => onSelect(LeftbarDestination.members),
                 ),
@@ -126,5 +129,3 @@ class _LeftBarItem extends StatelessWidget {
     );
   }
 }
-
-

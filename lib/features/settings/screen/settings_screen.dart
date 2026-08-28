@@ -31,11 +31,13 @@ class SettingsScreen extends StatelessWidget {
               final isDark = currentMode == ThemeMode.dark;
               return SwitchListTile(
                 secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
-                title: const Text('Karanlik Mod'),
-                subtitle: Text(isDark ? 'Acik' : 'Kapali'),
+                title: const Text('Karanlık Mod'),
+                subtitle: Text(isDark ? 'Açık' : 'Kapalı'),
                 value: isDark,
-                onChanged: (val) {
-                  settingsService.saveTheme(val ? ThemeMode.dark : ThemeMode.light);
+                onChanged: (value) {
+                  settingsService.saveTheme(
+                    value ? ThemeMode.dark : ThemeMode.light,
+                  );
                 },
               );
             },
@@ -47,7 +49,7 @@ class SettingsScreen extends StatelessWidget {
               return ListTile(
                 leading: const Icon(Icons.language),
                 title: const Text('Dil'),
-                subtitle: Text(currentLang == 'tr' ? 'Turkce' : 'English'),
+                subtitle: Text(currentLang == 'tr' ? 'Türkçe' : 'English'),
                 trailing: DropdownButton<String>(
                   value: currentLang,
                   underline: const SizedBox(),
@@ -55,8 +57,10 @@ class SettingsScreen extends StatelessWidget {
                     DropdownMenuItem(value: 'tr', child: Text('TR')),
                     DropdownMenuItem(value: 'en', child: Text('EN')),
                   ],
-                  onChanged: (val) {
-                    if (val != null) settingsService.saveLanguage(val);
+                  onChanged: (value) {
+                    if (value != null) {
+                      settingsService.saveLanguage(value);
+                    }
                   },
                 ),
               );
@@ -65,25 +69,27 @@ class SettingsScreen extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.storage, color: Colors.blueGrey),
-            title: const Text('Veritabani Yoneticisi'),
-            subtitle: const Text('Tablolari goruntule ve duzenle'),
+            title: const Text('Veritabanı Yöneticisi'),
+            subtitle: const Text('Tabloları görüntüle ve düzenle'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const DatabaseHomeScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const DatabaseHomeScreen(),
+                ),
               );
             },
           ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('Uygulama Hakkinda'),
+            title: const Text('Uygulama Hakkında'),
             subtitle: const Text('Libris v1.0.1'),
             onTap: () {
-              showDialog(
+              showDialog<void>(
                 context: context,
-                builder: (context) => AlertDialog(
+                builder: (dialogContext) => AlertDialog(
                   title: const Row(
                     children: [
                       Icon(Icons.library_books),
@@ -95,15 +101,18 @@ class SettingsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Surum: 1.0.1', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Sürüm: 1.0.1',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         SizedBox(height: 12),
-                        Text('© 2023 Libris Kutuphane Yonetim Sistemi'),
+                        Text('© 2026 Libris Kütüphane Yönetim Sistemi'),
                       ],
                     ),
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       child: const Text('Kapat'),
                     ),
                   ],
@@ -116,5 +125,3 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
-
-

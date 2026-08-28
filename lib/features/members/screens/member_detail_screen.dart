@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:libris/common/models/Member.dart';
+import 'package:libris/common/models/member.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/members/screens/member_form_screen.dart';
+import 'package:provider/provider.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final Member member;
@@ -23,23 +23,21 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   }
 
   Future<void> _editMember() async {
+    final provider = context.read<DatabaseProvider>();
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => MemberFormScreen(member: _member)),
     );
 
-    if (result == true) {
-      // Veriyi güncellemek için provider'dan veya db'den tekrar çekebiliriz
-      final updated = await context.read<DatabaseProvider>().db.getMemberById(
-        _member.id!,
-      );
-      if (updated != null) {
-        setState(() => _member = updated);
-      }
-    }
+    if (!mounted || result != true) return;
+
+    final updated = await provider.db.getMemberById(_member.id!);
+    if (!mounted || updated == null) return;
+    setState(() => _member = updated);
   }
 
   Future<void> _deleteMember() async {
+    final provider = context.read<DatabaseProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -58,10 +56,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
       ),
     );
 
-    if (confirmed == true) {
-      await context.read<DatabaseProvider>().deleteMember(_member.id!);
-      if (mounted) Navigator.pop(context, true);
-    }
+    if (!mounted || confirmed != true) return;
+    await provider.deleteMember(_member.id!);
+    if (!mounted) return;
+    Navigator.pop(context, true);
   }
 
   Widget _infoTile(String label, String? value, IconData icon) {

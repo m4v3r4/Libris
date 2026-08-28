@@ -1,19 +1,16 @@
-﻿import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
+import 'package:flutter/material.dart';
+import 'package:libris/common/database/database_platform.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/common/theme/app_theme.dart';
 import 'package:libris/features/home/screens/home_screen.dart';
 import 'package:libris/features/settings/services/settings_service.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:provider/provider.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
-
+  configureDatabaseFactory();
   await DatabaseHelper.instance.database;
 
   final settingsService = SettingsService();
@@ -41,7 +38,7 @@ class MyApp extends StatelessWidget {
       builder: (context, mode, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Libris Kutuphane',
+          title: 'Libris Kütüphane',
           themeMode: mode,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
@@ -51,4 +48,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

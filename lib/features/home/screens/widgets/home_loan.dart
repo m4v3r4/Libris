@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -83,7 +83,7 @@ class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin
             controller: _tabController,
             tabs: const [
               Tab(text: 'Gecikenler'),
-              Tab(text: 'Son Islemler'),
+              Tab(text: 'Son İşlemler'),
             ],
           ),
           Expanded(
@@ -112,7 +112,7 @@ class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin
 
   Widget _buildList(List<Map<String, dynamic>> items, {bool isOverdue = false}) {
     if (items.isEmpty) {
-      return const Center(child: Text('Kayit bulunamadi.'));
+      return const Center(child: Text('Kayıt bulunamadı.'));
     }
 
     return ListView.separated(
@@ -120,8 +120,8 @@ class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = items[index];
-        final bookTitle = item['bookTitle']?.toString() ?? 'Kitap silinmis';
-        final memberName = item['memberName']?.toString() ?? 'Uye silinmis';
+        final bookTitle = item['bookTitle']?.toString() ?? 'Kitap silinmiş';
+        final memberName = item['memberName']?.toString() ?? 'Üye silinmiş';
 
         IconData icon;
         Color color;
@@ -134,7 +134,7 @@ class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin
               : (date?.toString() ?? '-');
           icon = Icons.warning_amber_rounded;
           color = Colors.red;
-          subtitle = '$memberName\nSon gun: $dateStr';
+          subtitle = '$memberName\nSon gün: $dateStr';
         } else {
           final isReturned = item['returnedAt'] != null;
           final date = item['updatedAt'];
@@ -145,7 +145,7 @@ class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin
           if (isReturned) {
             icon = Icons.check_circle_outline;
             color = Colors.green;
-            subtitle = 'Teslim alindi: $memberName\n$dateStr';
+            subtitle = 'Teslim alındı: $memberName\n$dateStr';
           } else {
             icon = Icons.arrow_circle_right_outlined;
             color = Colors.blue;
@@ -168,4 +168,3 @@ class _HomeLoanState extends State<HomeLoan> with SingleTickerProviderStateMixin
     );
   }
 }
-

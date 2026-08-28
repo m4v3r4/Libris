@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:libris/features/books/screen/book_list_screen.dart';
 import 'package:libris/features/home/screens/widgets/category_analysis_widget.dart';
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
       appBar: AppBar(
-        title: const Text('Libris Kutuphane Sistemi'),
+        title: const Text('Libris Kütüphane Sistemi'),
         centerTitle: true,
       ),
       body: showDesktopSidebar
@@ -163,4 +163,3 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 }
-

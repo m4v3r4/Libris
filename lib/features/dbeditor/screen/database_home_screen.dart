@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:libris/features/dbeditor/services/database_inspector_service.dart';
@@ -26,12 +27,11 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
 
   Future<void> _loadTables() async {
     final tables = await _service.getTables();
-    if (mounted) {
-      setState(() {
-        _tables = tables;
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _tables = tables;
+      _isLoading = false;
+    });
   }
 
   Future<void> _exportDatabase() async {
@@ -47,37 +47,35 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(dbExport);
 
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Veritabanı Dışa Aktar'),
-            content: SingleChildScrollView(child: SelectableText(jsonString)),
-            actions: [
-              TextButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: jsonString));
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Kopyalandı!')));
-                },
-                icon: const Icon(Icons.copy),
-                label: const Text('Kopyala'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Kapat'),
-              ),
-            ],
-          ),
-        );
-      }
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Veritabanı Dışa Aktar'),
+          content: SingleChildScrollView(child: SelectableText(jsonString)),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: jsonString));
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Kopyalandı!')),
+                );
+              },
+              icon: const Icon(Icons.copy),
+              label: const Text('Kopyala'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Kapat'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Hata: $e')));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -89,7 +87,7 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
     final TextEditingController controller = TextEditingController();
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Veritabanı İçe Aktar'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -108,12 +106,12 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('İptal'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               _processImport(controller.text);
             },
             child: const Text('İçe Aktar'),
@@ -121,6 +119,7 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
         ],
       ),
     );
+    controller.dispose();
   }
 
   Future<void> _processImport(String jsonString) async {
@@ -129,7 +128,7 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
     try {
       final dynamic decoded = jsonDecode(jsonString);
       if (decoded is! Map<String, dynamic>) {
-        throw Exception("Geçersiz JSON formatı.");
+        throw Exception('Geçersiz JSON formatı.');
       }
       final Map<String, dynamic> data = Map<String, dynamic>.from(decoded);
       int totalRows = 0;
@@ -146,19 +145,16 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
         }
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('İçe aktarma başarılı: $totalRows kayıt.')),
-        );
-        _loadTables();
-        setState(() {});
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('İçe aktarma başarılı: $totalRows kayıt.')),
+      );
+      _loadTables();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('İçe aktarma hatası: $e')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('İçe aktarma hatası: $e')));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -167,12 +163,9 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
   }
 
   void _openCategoryManager() {
-    // DatabaseInspectorService içindeki DB instance'ını kullanıyoruz
-    // Not: _service.getDatabase() gibi bir metodunuz yoksa burayı projenizdeki DB erişimine göre güncelleyin.
-    // Geçici olarak inspector service'in kullandığı DB yolunu varsayıyoruz.
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => CategoryManagerScreen()),
+      MaterialPageRoute(builder: (context) => const CategoryManagerScreen()),
     );
   }
 
@@ -201,7 +194,6 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
       ),
       body: Row(
         children: [
-          // SOL PANEL: Tablo Listesi
           Expanded(
             flex: 1,
             child: Container(
@@ -212,7 +204,6 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-
                     width: double.infinity,
                     child: const Text(
                       'Tablolar',
@@ -231,9 +222,9 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
                               final isSelected = table == _selectedTable;
                               return ListTile(
                                 selected: isSelected,
-                                selectedTileColor: Theme.of(
-                                  context,
-                                ).primaryColor.withOpacity(0.1),
+                                selectedTileColor: Theme.of(context)
+                                    .primaryColor
+                                    .withValues(alpha: 0.1),
                                 leading: const Icon(
                                   Icons.table_chart,
                                   color: Colors.blue,
@@ -253,13 +244,12 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
               ),
             ),
           ),
-          // SAĞ PANEL: Seçilen Tablo ve Araç Çubuğu
           Expanded(
             flex: 9,
             child: _selectedTable == null
                 ? const Center(child: Text('İşlem yapmak için bir tablo seçin'))
                 : TableViewScreen(
-                    key: ValueKey(_selectedTable), // Tablo değişince yenile
+                    key: ValueKey(_selectedTable),
                     tableName: _selectedTable!,
                   ),
           ),

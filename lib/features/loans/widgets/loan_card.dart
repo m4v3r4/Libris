@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/common/models/loan.dart';
+import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
 
 class LoanCard extends StatefulWidget {
@@ -37,12 +37,11 @@ class _LoanCardState extends State<LoanCard> {
     final book = await _databaseHelper.getBookById(widget.loan.bookId);
     final member = await _databaseHelper.getMemberById(widget.loan.memberId);
 
-    if (mounted) {
-      setState(() {
-        _bookTitle = book?.title ?? 'Silinmiş Kayıt';
-        _memberName = member?.name ?? 'Silinmiş Kayıt';
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _bookTitle = book?.title ?? 'Silinmiş Kayıt';
+      _memberName = member?.name ?? 'Silinmiş Kayıt';
+    });
   }
 
   bool get isReturned => widget.loan.returnedAt != null;
@@ -86,14 +85,13 @@ class _LoanCardState extends State<LoanCard> {
           padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
-              // Üst Kısım: İkon, Başlıklar ve Durum Etiketi
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(Icons.book, color: statusColor, size: 28),
@@ -134,38 +132,33 @@ class _LoanCardState extends State<LoanCard> {
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: statusColor.withOpacity(0.3),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 12, color: statusColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(statusIcon, size: 12, color: statusColor),
-                            const SizedBox(width: 4),
-                            Text(
-                              statusText,
-                              style: TextStyle(
-                                color: statusColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -173,7 +166,6 @@ class _LoanCardState extends State<LoanCard> {
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Divider(height: 1),
               ),
-              // Alt Kısım: Tarihler ve Aksiyon Butonu
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -184,16 +176,12 @@ class _LoanCardState extends State<LoanCard> {
                     widget.loan.dueDate,
                     isOverdue: isOverdue,
                   ),
-
-                  // Düzenle Butonu
                   if (widget.onEdit != null)
                     IconButton(
                       icon: const Icon(Icons.edit, size: 20),
                       onPressed: widget.onEdit,
                       tooltip: 'Düzenle',
                     ),
-
-                  // Eğer iade edilmemişse ve onReturn fonksiyonu verilmişse butonu göster
                   if (!isReturned && widget.onReturn != null) ...[
                     const SizedBox(width: 8),
                     FilledButton.tonal(
@@ -204,7 +192,6 @@ class _LoanCardState extends State<LoanCard> {
                       ),
                       child: const Text('İade Al'),
                     ),
-
                     FilledButton.tonal(
                       onPressed: () {
                         Navigator.push(
@@ -219,7 +206,7 @@ class _LoanCardState extends State<LoanCard> {
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      child: const Text('Düzenle '),
+                      child: const Text('Düzenle'),
                     ),
                   ] else if (isReturned) ...[
                     Icon(

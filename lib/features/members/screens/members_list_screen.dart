@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:libris/common/models/Member.dart';
+import 'package:flutter/material.dart';
+import 'package:libris/common/models/member.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/members/screens/member_detail_screen.dart';
 import 'package:libris/features/members/screens/member_form_screen.dart';
@@ -38,6 +38,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
   Future<void> _loadMembers() async {
     setState(() => _isLoading = true);
     final members = await _memberService.getMembers();
+    if (!mounted) return;
     setState(() {
       _members = members;
       _filteredMembers = members;
@@ -69,6 +70,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
         MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
       );
     }
+    if (!mounted) return;
     _loadMembers();
   }
 
@@ -83,7 +85,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
                 onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
               )
             : null,
-        title: widget.embedded ? null : const Text('Uyeler'),
+        title: widget.embedded ? null : const Text('Üyeler'),
       ),
       body: Column(
         children: [
@@ -92,7 +94,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
-                hintText: 'Uye ara (isim, e-posta, telefon)',
+                hintText: 'Üye ara (isim, e-posta, telefon)',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
@@ -102,7 +104,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredMembers.isEmpty
-                ? const Center(child: Text('Uye bulunamadi'))
+                ? const Center(child: Text('Üye bulunamadı'))
                 : ListView.builder(
                     itemCount: _filteredMembers.length,
                     itemBuilder: (context, index) {
@@ -111,7 +113,7 @@ class _MembersListScreenState extends State<MembersListScreen> {
                         leading: const Icon(Icons.person),
                         title: Text(member.name),
                         subtitle: Text(
-                          member.email ?? member.phone ?? 'Iletisim bilgisi yok',
+                          member.email ?? member.phone ?? 'İletişim bilgisi yok',
                         ),
                         onTap: () => _openForm(member: member),
                       );
@@ -127,4 +129,3 @@ class _MembersListScreenState extends State<MembersListScreen> {
     );
   }
 }
-

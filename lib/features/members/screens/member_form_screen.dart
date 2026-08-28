@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:libris/common/models/Member.dart' show Member;
+import 'package:libris/common/models/member.dart';
 import 'package:libris/common/providers/database_provider.dart';
+import 'package:provider/provider.dart';
 
 class MemberFormScreen extends StatefulWidget {
   final Member? member;
@@ -78,7 +78,8 @@ class _MemberFormScreenState extends State<MemberFormScreen> {
       await provider.addMember(member);
     }
 
-    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   @override
@@ -105,7 +106,6 @@ class _MemberFormScreenState extends State<MemberFormScreen> {
                 },
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -115,7 +115,6 @@ class _MemberFormScreenState extends State<MemberFormScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
@@ -125,7 +124,6 @@ class _MemberFormScreenState extends State<MemberFormScreen> {
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _addressController,
                 decoration: const InputDecoration(
@@ -135,7 +133,6 @@ class _MemberFormScreenState extends State<MemberFormScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
-
               ElevatedButton(
                 onPressed: _saveMember,
                 child: Text(isEdit ? 'Güncelle' : 'Kaydet'),

@@ -99,6 +99,7 @@ class _BookFormScreenState extends State<BookFormScreen> {
       await _bookService.createBook(book);
     }
 
+    if (!mounted) return;
     Navigator.pop(context, true);
   }
 
@@ -122,7 +123,6 @@ class _BookFormScreenState extends State<BookFormScreen> {
             _buildNumberField(_pageCountController, 'Sayfa Sayısı'),
             _buildTextField(_categoryController, 'Kategori'),
             _buildTextField(_locationController, 'Raf / Konum'),
-
             SwitchListTile(
               title: const Text('Müsait'),
               value: _isAvailable,
@@ -130,7 +130,6 @@ class _BookFormScreenState extends State<BookFormScreen> {
                 setState(() => _isAvailable = value);
               },
             ),
-
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _saveBook,

@@ -22,7 +22,7 @@ class NotificationWidget extends StatelessWidget {
               itemBuilder: (context, index) {
                 return const ListTile(
                   title: Text('Bildirim'),
-                  subtitle: Text('Bildirim aciklamasi'),
+                  subtitle: Text('Bildirim açıklaması'),
                   trailing: Icon(Icons.notifications),
                 );
               },

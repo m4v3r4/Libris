@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/common/models/loan.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
@@ -53,7 +53,9 @@ class _LoanListScreenState extends State<LoanListScreen> {
         break;
       case LoanFilterStatus.overdue:
         final now = DateTime.now();
-        result = result.where((l) => l.returnedAt == null && now.isAfter(l.dueDate)).toList();
+        result = result
+            .where((l) => l.returnedAt == null && now.isAfter(l.dueDate))
+            .toList();
         break;
       case LoanFilterStatus.returned:
         result = result.where((l) => l.returnedAt != null).toList();
@@ -64,8 +66,12 @@ class _LoanListScreenState extends State<LoanListScreen> {
 
     if (_dateRange != null) {
       result = result.where((l) {
-        return l.loanDate.isAfter(_dateRange!.start.subtract(const Duration(days: 1))) &&
-            l.loanDate.isBefore(_dateRange!.end.add(const Duration(days: 1)));
+        return l.loanDate.isAfter(
+              _dateRange!.start.subtract(const Duration(days: 1)),
+            ) &&
+            l.loanDate.isBefore(
+              _dateRange!.end.add(const Duration(days: 1)),
+            );
       }).toList();
     }
 
@@ -104,13 +110,13 @@ class _LoanListScreenState extends State<LoanListScreen> {
   String _getStatusLabel(LoanFilterStatus status) {
     switch (status) {
       case LoanFilterStatus.all:
-        return 'Tumu';
+        return 'Tümü';
       case LoanFilterStatus.active:
         return 'Emanette';
       case LoanFilterStatus.overdue:
-        return 'Gecikmis';
+        return 'Gecikmiş';
       case LoanFilterStatus.returned:
-        return 'Iade Edilen';
+        return 'İade Edilen';
     }
   }
 
@@ -138,7 +144,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
                   avatar: const Icon(Icons.calendar_today, size: 16),
                   label: Text(
                     _dateRange == null
-                        ? 'Tarih Araligi'
+                        ? 'Tarih Aralığı'
                         : '${_dateRange!.start.day}.${_dateRange!.start.month} - ${_dateRange!.end.day}.${_dateRange!.end.month}',
                   ),
                   onPressed: _pickDateRange,
@@ -174,7 +180,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredLoans.isEmpty
-                ? const Center(child: Text('Kayit bulunamadi'))
+                ? const Center(child: Text('Kayıt bulunamadı'))
                 : ListView.builder(
                     itemCount: _filteredLoans.length,
                     itemBuilder: (context, index) {
@@ -195,4 +201,3 @@ class _LoanListScreenState extends State<LoanListScreen> {
     );
   }
 }
-
