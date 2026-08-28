@@ -33,6 +33,14 @@ jobs:
       - name: Verify lockfile
         run: git diff --exit-code -- pubspec.lock
 
+      - name: Check text encoding
+        shell: bash
+        run: |
+          if grep -RInE 'Ã|Å|Ä|Â' lib; then
+            echo 'Possible mojibake detected in lib/.'
+            exit 1
+          fi
+
       - name: Analyze
         run: flutter analyze
 
