@@ -44,6 +44,7 @@ class _TableViewScreenState extends State<TableViewScreen> {
     }
     pk ??= schema.isNotEmpty ? schema.first['name'] : null;
 
+    if (!mounted) return;
     setState(() {
       _schema = schema;
       _data = data;
@@ -51,8 +52,6 @@ class _TableViewScreenState extends State<TableViewScreen> {
       _loading = false;
     });
   }
-
-  // ---------------- CRUD ----------------
 
   Future<void> _addRow() async {
     final values = await _editDialog({});
@@ -73,16 +72,16 @@ class _TableViewScreenState extends State<TableViewScreen> {
   Future<void> _deleteRow(Map<String, dynamic> row) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Sil'),
         content: const Text('Bu kayıt kalıcı olarak silinecek.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Vazgeç'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Sil'),
           ),
         ],
@@ -95,18 +94,15 @@ class _TableViewScreenState extends State<TableViewScreen> {
     }
   }
 
-  // ---------------- JSON ----------------
-
   Future<void> _exportJson() async {
     final file = await _pickSaveFile('json');
     if (file == null) return;
 
     await file.writeAsString(const JsonEncoder.withIndent('  ').convert(_data));
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('JSON kaydedildi: ${file.path}')));
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('JSON kaydedildi: ${file.path}')));
   }
 
   Future<void> _importJson() async {
@@ -115,19 +111,14 @@ class _TableViewScreenState extends State<TableViewScreen> {
 
     final dynamic decoded = jsonDecode(await file.readAsString());
     if (decoded is! List) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Hata: JSON verisi bir liste olmalıdır.'),
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Hata: JSON verisi bir liste olmalıdır.')),
+      );
       return;
     }
     await _transactionImport(decoded);
   }
-
-  // ---------------- CSV ----------------
 
   Future<void> _exportCsv() async {
     final rows = [
@@ -137,14 +128,12 @@ class _TableViewScreenState extends State<TableViewScreen> {
     final csv = const ListToCsvConverter().convert(rows);
 
     final file = await _pickSaveFile('csv');
-    if (file != null) {
-      await file.writeAsString(csv);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('CSV kaydedildi: ${file.path}')));
-      }
-    }
+    if (file == null) return;
+    await file.writeAsString(csv);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('CSV kaydedildi: ${file.path}')));
   }
 
   Future<void> _importCsv() async {
@@ -166,8 +155,6 @@ class _TableViewScreenState extends State<TableViewScreen> {
     await _transactionImport(rows);
   }
 
-  // ---------------- EXCEL ----------------
-
   Future<void> _exportExcel() async {
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
@@ -184,17 +171,14 @@ class _TableViewScreenState extends State<TableViewScreen> {
     }
 
     final file = await _pickSaveFile('xlsx');
-    if (file != null) {
-      final bytes = excel.encode();
-      if (bytes != null) {
-        await file.writeAsBytes(bytes);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Excel kaydedildi: ${file.path}')),
-          );
-        }
-      }
-    }
+    if (file == null) return;
+    final bytes = excel.encode();
+    if (bytes == null) return;
+    await file.writeAsBytes(bytes);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Excel kaydedildi: ${file.path}')));
   }
 
   Future<void> _importExcel() async {
@@ -205,7 +189,7 @@ class _TableViewScreenState extends State<TableViewScreen> {
     if (excel.tables.isEmpty) return;
 
     final sheet = excel.tables.values.first;
-    if (sheet == null || sheet.rows.isEmpty) return;
+    if (sheet.rows.isEmpty) return;
 
     final headers = sheet.rows.first
         .map((e) => e?.value?.toString() ?? '')
@@ -221,8 +205,6 @@ class _TableViewScreenState extends State<TableViewScreen> {
     await _transactionImport(rows);
   }
 
-  // ---------------- Helpers ----------------
-
   Future<void> _transactionImport(List rows) async {
     int count = 0;
     for (final r in rows) {
@@ -232,11 +214,10 @@ class _TableViewScreenState extends State<TableViewScreen> {
       }
     }
     _load();
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$count kayıt içe aktarıldı')));
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$count kayıt içe aktarıldı')));
   }
 
   Future<File?> _pickSaveFile(String ext) async {
@@ -246,8 +227,8 @@ class _TableViewScreenState extends State<TableViewScreen> {
 
   Future<File?> _pickOpenFile() async {
     final res = await FilePicker.platform.pickFiles();
-    if (res == null) return null;
-    return File(res.files.single.path!);
+    final path = res?.files.single.path;
+    return path == null ? null : File(path);
   }
 
   Future<Map<String, dynamic>?> _editDialog(Map<String, dynamic> row) {
@@ -256,8 +237,6 @@ class _TableViewScreenState extends State<TableViewScreen> {
       builder: (_) => _EditDialog(schema: _schema, row: row),
     );
   }
-
-  // ---------------- UI ----------------
 
   @override
   Widget build(BuildContext context) {
@@ -268,38 +247,7 @@ class _TableViewScreenState extends State<TableViewScreen> {
           title: Text(widget.tableName),
           actions: [
             IconButton(icon: const Icon(Icons.add), onPressed: _addRow),
-            PopupMenuButton<String>(
-              onSelected: (v) {
-                switch (v) {
-                  case 'json_in':
-                    _importJson();
-                    break;
-                  case 'json_out':
-                    _exportJson();
-                    break;
-                  case 'csv_in':
-                    _importCsv();
-                    break;
-                  case 'csv_out':
-                    _exportCsv();
-                    break;
-                  case 'xls_in':
-                    _importExcel();
-                    break;
-                  case 'xls_out':
-                    _exportExcel();
-                    break;
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'json_in', child: Text('JSON Import')),
-                PopupMenuItem(value: 'json_out', child: Text('JSON Export')),
-                PopupMenuItem(value: 'csv_in', child: Text('CSV Import')),
-                PopupMenuItem(value: 'csv_out', child: Text('CSV Export')),
-                PopupMenuItem(value: 'xls_in', child: Text('Excel Import')),
-                PopupMenuItem(value: 'xls_out', child: Text('Excel Export')),
-              ],
-            ),
+            _buildImportExportMenu(),
           ],
         ),
         body: const Center(child: Text('Tabloda veri yok.')),
@@ -311,38 +259,7 @@ class _TableViewScreenState extends State<TableViewScreen> {
         title: Text(widget.tableName),
         actions: [
           IconButton(icon: const Icon(Icons.add), onPressed: _addRow),
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              switch (v) {
-                case 'json_in':
-                  _importJson();
-                  break;
-                case 'json_out':
-                  _exportJson();
-                  break;
-                case 'csv_in':
-                  _importCsv();
-                  break;
-                case 'csv_out':
-                  _exportCsv();
-                  break;
-                case 'xls_in':
-                  _importExcel();
-                  break;
-                case 'xls_out':
-                  _exportExcel();
-                  break;
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'json_in', child: Text('JSON Import')),
-              PopupMenuItem(value: 'json_out', child: Text('JSON Export')),
-              PopupMenuItem(value: 'csv_in', child: Text('CSV Import')),
-              PopupMenuItem(value: 'csv_out', child: Text('CSV Export')),
-              PopupMenuItem(value: 'xls_in', child: Text('Excel Import')),
-              PopupMenuItem(value: 'xls_out', child: Text('Excel Export')),
-            ],
-          ),
+          _buildImportExportMenu(),
         ],
       ),
       body: SingleChildScrollView(
@@ -357,15 +274,42 @@ class _TableViewScreenState extends State<TableViewScreen> {
       ),
     );
   }
-}
 
-// ---------------- DataSource ----------------
+  PopupMenuButton<String> _buildImportExportMenu() {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        switch (value) {
+          case 'json_in':
+            _importJson();
+          case 'json_out':
+            _exportJson();
+          case 'csv_in':
+            _importCsv();
+          case 'csv_out':
+            _exportCsv();
+          case 'xls_in':
+            _importExcel();
+          case 'xls_out':
+            _exportExcel();
+        }
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'json_in', child: Text('JSON Import')),
+        PopupMenuItem(value: 'json_out', child: Text('JSON Export')),
+        PopupMenuItem(value: 'csv_in', child: Text('CSV Import')),
+        PopupMenuItem(value: 'csv_out', child: Text('CSV Export')),
+        PopupMenuItem(value: 'xls_in', child: Text('Excel Import')),
+        PopupMenuItem(value: 'xls_out', child: Text('Excel Export')),
+      ],
+    );
+  }
+}
 
 class _TableSource extends DataTableSource {
   final List<Map<String, dynamic>> data;
   final List schema;
-  final Function(Map<String, dynamic>) onEdit;
-  final Function(Map<String, dynamic>) onDelete;
+  final ValueChanged<Map<String, dynamic>> onEdit;
+  final ValueChanged<Map<String, dynamic>> onDelete;
 
   _TableSource(this.data, this.schema, this.onEdit, this.onDelete);
 
@@ -395,17 +339,18 @@ class _TableSource extends DataTableSource {
 
   @override
   int get rowCount => data.length;
+
   @override
   bool get isRowCountApproximate => false;
+
   @override
   int get selectedRowCount => 0;
 }
 
-// ---------------- Edit Dialog ----------------
-
 class _EditDialog extends StatefulWidget {
   final List schema;
   final Map<String, dynamic> row;
+
   const _EditDialog({required this.schema, required this.row});
 
   @override
@@ -413,16 +358,24 @@ class _EditDialog extends StatefulWidget {
 }
 
 class _EditDialogState extends State<_EditDialog> {
-  final Map<String, TextEditingController> c = {};
+  final Map<String, TextEditingController> controllers = {};
 
   @override
   void initState() {
     super.initState();
     for (final col in widget.schema) {
-      c[col['name']] = TextEditingController(
+      controllers[col['name']] = TextEditingController(
         text: widget.row[col['name']]?.toString() ?? '',
       );
     }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -435,7 +388,7 @@ class _EditDialogState extends State<_EditDialog> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: TextField(
-                controller: c[col['name']],
+                controller: controllers[col['name']],
                 decoration: InputDecoration(
                   labelText: col['name'],
                   border: const OutlineInputBorder(),
@@ -452,9 +405,11 @@ class _EditDialogState extends State<_EditDialog> {
         ),
         FilledButton(
           onPressed: () {
-            final m = <String, dynamic>{};
-            c.forEach((k, v) => m[k] = v.text);
-            Navigator.pop(context, m);
+            final values = <String, dynamic>{};
+            controllers.forEach((key, controller) {
+              values[key] = controller.text;
+            });
+            Navigator.pop(context, values);
           },
           child: const Text('Kaydet'),
         ),
