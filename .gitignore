@@ -1,45 +1,99 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# -----------------------------------------------------------------------------
+# OS / editor junk
+# -----------------------------------------------------------------------------
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*.bak
+*.log
+.history/
 
-# IntelliJ related
+# IDE settings
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# -----------------------------------------------------------------------------
+# Dart / Flutter / Pub
+# -----------------------------------------------------------------------------
 .dart_tool/
-.flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/doc/api/
 /build/
-/coverage/
+coverage/
 
-# Symbolication related
+# Flutter generated build state
+**/Flutter/.last_build_id
+**/Flutter/ephemeral/
+**/flutter/ephemeral/
+
+# -----------------------------------------------------------------------------
+# Android
+# -----------------------------------------------------------------------------
+android/.gradle/
+android/local.properties
+android/**/.cxx/
+android/app/debug/
+android/app/profile/
+android/app/release/
+*.jks
+*.keystore
+key.properties
+
+# -----------------------------------------------------------------------------
+# iOS / macOS
+# -----------------------------------------------------------------------------
+ios/Pods/
+macos/Pods/
+ios/.symlinks/
+macos/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+macos/Flutter/ephemeral/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# -----------------------------------------------------------------------------
+# Windows / Linux generated files
+# -----------------------------------------------------------------------------
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# -----------------------------------------------------------------------------
+# Local database / exports / runtime data
+# -----------------------------------------------------------------------------
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.csv
+*.xlsx
+*.json.bak
+
+# Keep application source/config JSON files tracked; only backup JSON is ignored.
+
+# -----------------------------------------------------------------------------
+# Misc build artifacts
+# -----------------------------------------------------------------------------
+*.class
+*.pyc
+*.symbols
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+.atom/
+.build/
+.buildlog/
+.svn/
+.swiftpm/
+migrate_working_dir/
