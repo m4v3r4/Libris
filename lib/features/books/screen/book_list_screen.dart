@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
 import 'package:libris/features/books/screen/book_detail_screen.dart';
@@ -133,7 +133,7 @@ class _BookListScreenState extends State<BookListScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredBooks.isEmpty
-                ? const Center(child: Text('Sonuc bulunamadi'))
+                ? const Center(child: Text('Sonuç bulunamadı'))
                 : _viewType == BookViewType.list
                 ? ListView.builder(
                     itemCount: _filteredBooks.length,
@@ -223,4 +223,3 @@ class _BookListScreenState extends State<BookListScreen> {
     _loadBooks();
   }
 }
-
