@@ -300,12 +300,12 @@ class _TableViewScreenState extends State<TableViewScreen> {
         }
       },
       itemBuilder: (_) => const [
-        PopupMenuItem(value: 'json_in', child: Text('JSON Import')),
-        PopupMenuItem(value: 'json_out', child: Text('JSON Export')),
-        PopupMenuItem(value: 'csv_in', child: Text('CSV Import')),
-        PopupMenuItem(value: 'csv_out', child: Text('CSV Export')),
-        PopupMenuItem(value: 'xls_in', child: Text('Excel Import')),
-        PopupMenuItem(value: 'xls_out', child: Text('Excel Export')),
+        PopupMenuItem(value: 'json_in', child: Text('JSON İçe Aktar')),
+        PopupMenuItem(value: 'json_out', child: Text('JSON Dışa Aktar')),
+        PopupMenuItem(value: 'csv_in', child: Text('CSV İçe Aktar')),
+        PopupMenuItem(value: 'csv_out', child: Text('CSV Dışa Aktar')),
+        PopupMenuItem(value: 'xls_in', child: Text('Excel İçe Aktar')),
+        PopupMenuItem(value: 'xls_out', child: Text('Excel Dışa Aktar')),
       ],
     );
   }
