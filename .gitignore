@@ -17,6 +17,17 @@ Desktop.ini
 *.ipr
 *.iws
 .vscode/
+devtools_options.yaml
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pem
+key.properties
 
 # -----------------------------------------------------------------------------
 # Dart / Flutter / Pub
@@ -36,6 +47,9 @@ coverage/
 **/Flutter/ephemeral/
 **/flutter/ephemeral/
 
+# Web is intentionally unsupported in Libris v1.x
+/web/
+
 # -----------------------------------------------------------------------------
 # Android
 # -----------------------------------------------------------------------------
@@ -45,9 +59,6 @@ android/**/.cxx/
 android/app/debug/
 android/app/profile/
 android/app/release/
-*.jks
-*.keystore
-key.properties
 
 # -----------------------------------------------------------------------------
 # iOS / macOS
