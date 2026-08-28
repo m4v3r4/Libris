@@ -2,7 +2,7 @@
 
 A simple, offline-first library management application built with Flutter and SQLite.
 
-Libris is designed for small school, community, personal, or local libraries that need a straightforward way to manage books, members, and loans without depending on a server or an internet connection.
+Libris is designed for small school, community, personal, or local libraries that need a straightforward way to manage books, members, physical copies, and loans without depending on a server or an internet connection.
 
 > A small project with a surprisingly real origin.
 
@@ -34,6 +34,9 @@ Screenshots of the current interface will be added here.
 - View book details
 - Organize books by category
 - Store shelf/location information
+- Track multiple physical copies of the same title
+- Assign unique inventory/barcode identifiers to physical copies
+- Track copy states: available, loaned, lost, and maintenance
 - Track recently added and frequently borrowed books
 
 ### 👥 Member Management
@@ -44,12 +47,13 @@ Screenshots of the current interface will be added here.
 
 ### 🔄 Loan Management
 
-- Check books out to members
+- Check a specific physical copy out to a member
 - Process book returns
 - Track active, returned, and overdue loans
 - Search books and members while creating a loan
 - Filter loans by date and status
-- Prevent the same book from being loaned to multiple members at the same time
+- Allow multiple copies of the same title to be loaned at the same time
+- Prevent the same physical copy from being loaned twice
 
 ### 📊 Dashboard
 
@@ -115,7 +119,7 @@ Desktop platforms use `sqflite_common_ffi`, while Android and iOS use the standa
 
 ## Getting Started
 
-The current stabilization work is tested with **Flutter 3.41.9 / Dart 3.11.5**.
+The current release line is tested with **Flutter 3.41.9 / Dart 3.11.5**.
 
 Clone the repository:
 
@@ -159,6 +163,8 @@ flutter analyze
 flutter test
 ```
 
+Desktop pull requests are also smoke-built for Windows, Linux, and macOS.
+
 The project deliberately stays relatively small and approachable. Changes that improve reliability, usability, portability, or maintainability are especially welcome.
 
 ## Contributing
@@ -182,9 +188,9 @@ Development is intentionally informal. There are things that should be fixed, th
 
 The current roadmap lives in GitHub Issues:
 
-**[Libris Roadmap — first tidy up, then have some fun 😄](https://github.com/m4v3r4/Libris/issues/31)**
+**[Libris Roadmap — stabilize first, then have fun 😄](https://github.com/m4v3r4/Libris/issues/31)**
 
-Current stable release: **v1.0.1**
+Current release line: **v1.2.0**
 
 ## License
 
