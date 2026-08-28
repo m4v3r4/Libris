@@ -26,6 +26,7 @@ class _LoanCardState extends State<LoanCard> {
 
   String _bookTitle = 'Yükleniyor...';
   String _memberName = 'Yükleniyor...';
+  String? _copyCode;
 
   @override
   void initState() {
@@ -36,11 +37,15 @@ class _LoanCardState extends State<LoanCard> {
   Future<void> _fetchDetails() async {
     final book = await _databaseHelper.getBookById(widget.loan.bookId);
     final member = await _databaseHelper.getMemberById(widget.loan.memberId);
+    final copy = widget.loan.copyId == null
+        ? null
+        : await _databaseHelper.getBookCopyById(widget.loan.copyId!);
 
     if (!mounted) return;
     setState(() {
       _bookTitle = book?.title ?? 'Silinmiş Kayıt';
       _memberName = member?.name ?? 'Silinmiş Kayıt';
+      _copyCode = copy?.inventoryCode;
     });
   }
 
@@ -129,6 +134,26 @@ class _LoanCardState extends State<LoanCard> {
                             ),
                           ],
                         ),
+                        if (_copyCode != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 15,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _copyCode!,
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
