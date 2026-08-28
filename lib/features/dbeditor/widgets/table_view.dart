@@ -281,16 +281,22 @@ class _TableViewScreenState extends State<TableViewScreen> {
         switch (value) {
           case 'json_in':
             _importJson();
+            break;
           case 'json_out':
             _exportJson();
+            break;
           case 'csv_in':
             _importCsv();
+            break;
           case 'csv_out':
             _exportCsv();
+            break;
           case 'xls_in':
             _importExcel();
+            break;
           case 'xls_out':
             _exportExcel();
+            break;
         }
       },
       itemBuilder: (_) => const [
