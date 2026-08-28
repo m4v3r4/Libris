@@ -19,7 +19,6 @@ class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
   @override
   void initState() {
     super.initState();
-
     _loadBooks();
   }
 
@@ -29,26 +28,22 @@ class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
       final books = await _databaseHelper.getBooksByCategory(
         widget.categoryName,
       );
-      if (mounted) {
-        setState(() {
-          _books = books;
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _books = books;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Hata: $e')));
     }
   }
 
   Future<void> _changeCategory(Book book) async {
-    // Tüm kategorileri çek
     final categories = await _databaseHelper.getCategoryNames();
-    // Mevcut kategoriyi listeden çıkar (zaten orada)
     categories.remove(widget.categoryName);
 
     if (!mounted) return;
@@ -62,50 +57,51 @@ class _CategoryBooksScreenState extends State<CategoryBooksScreen> {
 
     String? selectedCategory;
 
-    await showDialog(
+    await showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Kategori Taşı'),
           content: StatefulBuilder(
-            builder: (context, setState) {
+            builder: (context, setDialogState) {
               return DropdownButton<String>(
                 isExpanded: true,
                 hint: const Text('Yeni Kategori Seçin'),
                 value: selectedCategory,
-                items: categories.map((c) {
-                  return DropdownMenuItem(value: c, child: Text(c));
+                items: categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
                 }).toList(),
-                onChanged: (val) {
-                  setState(() => selectedCategory = val);
+                onChanged: (value) {
+                  setDialogState(() => selectedCategory = value);
                 },
               );
             },
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('İptal'),
             ),
             ElevatedButton(
               onPressed: () async {
-                if (selectedCategory != null) {
-                  await _databaseHelper.updateBookCategory(
-                    book.id!,
-                    selectedCategory!,
-                  );
-                  if (mounted) {
-                    Navigator.pop(context);
-                    _loadBooks(); // Listeyi yenile (taşınan kitap listeden gidecek)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Kitap "$selectedCategory" kategorisine taşındı.',
-                        ),
-                      ),
-                    );
-                  }
-                }
+                final category = selectedCategory;
+                if (category == null) return;
+
+                await _databaseHelper.updateBookCategory(book.id!, category);
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+
+                if (!mounted) return;
+                await _loadBooks();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Kitap "$category" kategorisine taşındı.'),
+                  ),
+                );
               },
               child: const Text('Taşı'),
             ),
