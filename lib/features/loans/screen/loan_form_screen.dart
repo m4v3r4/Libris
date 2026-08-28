@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:libris/common/models/Member.dart';
+import 'package:libris/common/models/loan.dart';
+import 'package:libris/common/models/member.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
-import 'package:libris/common/models/loan.dart';
 
 class LoanFormScreen extends StatefulWidget {
   final Loan? loan;
@@ -16,7 +16,6 @@ class LoanFormScreen extends StatefulWidget {
 class _LoanFormScreenState extends State<LoanFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
-  // BookService'in projenizde var olduğunu varsayıyoruz
 
   Book? _selectedBook;
   Member? _selectedMember;
@@ -35,17 +34,11 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
   Future<void> _loadInitialData() async {
     final book = await _databaseHelper.getBookById(widget.loan!.bookId);
     final member = await _databaseHelper.getMemberById(widget.loan!.memberId);
-    if (mounted) {
-      setState(() {
-        _selectedBook = book;
-        _selectedMember = member;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
+    if (!mounted) return;
+    setState(() {
+      _selectedBook = book;
+      _selectedMember = member;
+    });
   }
 
   Future<void> _pickDueDate() async {
@@ -56,9 +49,8 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
-    if (picked != null) {
-      setState(() => _dueDate = picked);
-    }
+    if (!mounted || picked == null) return;
+    setState(() => _dueDate = picked);
   }
 
   Future<void> _saveLoan() async {
@@ -70,7 +62,7 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
     }
 
     final loan = Loan(
-      id: widget.loan?.id, // Düzenleme ise ID korunmalı
+      id: widget.loan?.id,
       bookId: _selectedBook!.id!,
       memberId: _selectedMember!.id!,
       loanDate: widget.loan?.loanDate ?? DateTime.now(),
@@ -84,15 +76,16 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
       } else {
         await _databaseHelper.createLoan(loan);
       }
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
-  // Üye Seçimi İçin Modal
   void _showMemberPicker() {
     showModalBottomSheet(
       context: context,
@@ -114,7 +107,6 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
     );
   }
 
-  // Kitap Seçimi İçin Modal
   void _showBookPicker() {
     showModalBottomSheet(
       context: context,
@@ -148,7 +140,6 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              // KİTAP SEÇİMİ
               InkWell(
                 onTap: _showBookPicker,
                 child: InputDecorator(
@@ -169,8 +160,6 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // ÜYE SEÇİMİ
               InkWell(
                 onTap: _showMemberPicker,
                 child: InputDecorator(
@@ -205,7 +194,7 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _saveLoan,
-                child: const Text('Emanet Ver'),
+                child: Text(widget.loan != null ? 'Güncelle' : 'Emanet Ver'),
               ),
             ],
           ),
@@ -215,13 +204,11 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
   }
 }
 
-/// Üye Arama ve Seçme Widget'ı
 class _MemberSearchSheet extends StatefulWidget {
   final DatabaseHelper databaseHelper;
-  final Function(Member) onSelect;
+  final ValueChanged<Member> onSelect;
 
   const _MemberSearchSheet({
-    super.key,
     required this.databaseHelper,
     required this.onSelect,
   });
@@ -234,14 +221,15 @@ class _MemberSearchSheetState extends State<_MemberSearchSheet> {
   List<Member> _results = [];
   String _query = '';
 
-  void _search(String query) async {
+  Future<void> _search(String query) async {
     _query = query;
     if (query.isEmpty) {
       setState(() => _results = []);
       return;
     }
     final res = await widget.databaseHelper.searchMembers(query);
-    if (mounted) setState(() => _results = res);
+    if (!mounted) return;
+    setState(() => _results = res);
   }
 
   @override
@@ -281,13 +269,11 @@ class _MemberSearchSheetState extends State<_MemberSearchSheet> {
   }
 }
 
-/// Kitap Arama ve Seçme Widget'ı
 class _BookSearchSheet extends StatefulWidget {
   final DatabaseHelper bookService;
-  final Function(Book) onSelect;
+  final ValueChanged<Book> onSelect;
 
   const _BookSearchSheet({
-    super.key,
     required this.bookService,
     required this.onSelect,
   });
@@ -307,15 +293,12 @@ class _BookSearchSheetState extends State<_BookSearchSheet> {
   }
 
   Future<void> _loadBooks() async {
-    // BookService'de searchBooks yoksa bile getBooks ile çekip
-    // burada filtreleyebiliriz.
     final books = await widget.bookService.getBooks();
-    if (mounted) {
-      setState(() {
-        _allBooks = books;
-        _filteredBooks = books;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _allBooks = books;
+      _filteredBooks = books;
+    });
   }
 
   void _filter(String query) {
