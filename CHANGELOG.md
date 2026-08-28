@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v1.1 stabilization
+## v1.1.0 - 2026-08-28
 
 ### Fixed
 - Aktif bir emanet kaydı silindiğinde ilgili kitabın tekrar müsait duruma dönmesi sağlandı.
@@ -15,11 +15,14 @@
 - Web hedefi v1.x için desteklenmediğinden web platform iskeleti kaldırıldı.
 - `.gitignore` Flutter build/cache, IDE, platform çıktıları, yerel veritabanları ve export dosyaları için genişletildi.
 - README ve proje metadata'sı güncellendi.
+- Kullanılmayan `cupertino_icons` bağımlılığı kaldırıldı.
+- Uygulama sürümü `1.1.0+3` olarak güncellendi.
 
 ### Tests / CI
 - Takılan eski widget smoke testi kaldırıldı.
 - Kritik emanet ve veri bütünlüğü akışları için in-memory SQLite testleri eklendi.
 - GitHub Actions ile `flutter analyze` ve `flutter test` kontrolleri eklendi.
+- Windows, Linux ve macOS için gerçek debug build smoke testleri eklendi.
 
 ## v1.0.1 - 2026-02-15
 - Patch release for Libris v1.0.
