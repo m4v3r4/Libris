@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/features/books/screen/book_form_screen.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
 import 'package:libris/features/loans/screen/loan_list_screen.dart';
@@ -21,42 +21,42 @@ class _QuickMenuState extends State<QuickMenu> {
     _QuickAction(
       id: 'book_add',
       title: 'Kitap Ekle',
-      subtitle: 'Yeni kitap kaydi olustur',
+      subtitle: 'Yeni kitap kaydı oluştur',
       icon: Icons.add_box_outlined,
       builder: () => BookFormScreen(),
     ),
     _QuickAction(
       id: 'member_add',
-      title: 'Uye Ekle',
-      subtitle: 'Yeni uye kaydi olustur',
+      title: 'Üye Ekle',
+      subtitle: 'Yeni üye kaydı oluştur',
       icon: Icons.person_add_alt_1,
       builder: () => const MemberFormScreen(),
     ),
     _QuickAction(
       id: 'loan_add',
       title: 'Emanet Ver',
-      subtitle: 'Kitap odunc islemi baslat',
+      subtitle: 'Kitap ödünç işlemi başlat',
       icon: Icons.swap_horizontal_circle_outlined,
       builder: () => LoanFormScreen(),
     ),
     _QuickAction(
       id: 'loan_list',
       title: 'Emanet Listesi',
-      subtitle: 'Tum emanetleri goruntule',
+      subtitle: 'Tüm emanetleri görüntüle',
       icon: Icons.list_alt_rounded,
       builder: () => const LoanListScreen(),
     ),
     _QuickAction(
       id: 'category',
       title: 'Kategoriler',
-      subtitle: 'Kategori yonetimini ac',
+      subtitle: 'Kategori yönetimini aç',
       icon: Icons.category_outlined,
       builder: () => CategoryManagerScreen(),
     ),
     _QuickAction(
       id: 'settings',
       title: 'Ayarlar',
-      subtitle: 'Tema ve uygulama ayarlari',
+      subtitle: 'Tema ve uygulama ayarları',
       icon: Icons.tune_rounded,
       builder: () => const SettingsScreen(),
     ),
@@ -92,14 +92,14 @@ class _QuickMenuState extends State<QuickMenu> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hizli Menu', style: Theme.of(context).textTheme.titleMedium),
+            Text('Hızlı Menü', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
             TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 isDense: true,
-                hintText: 'Islem ara...',
+                hintText: 'İşlem ara...',
                 prefixIcon: Icon(Icons.search, size: 18),
               ),
             ),
@@ -161,7 +161,9 @@ class _QuickMenuState extends State<QuickMenu> {
                                       action.title,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
@@ -216,4 +218,3 @@ class _QuickAction {
     required this.builder,
   });
 }
-
