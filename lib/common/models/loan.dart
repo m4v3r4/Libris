@@ -3,6 +3,7 @@ class Loan {
 
   final int bookId;
   final int memberId;
+  final int? copyId;
 
   final DateTime loanDate;
   final DateTime dueDate;
@@ -15,6 +16,7 @@ class Loan {
     this.id,
     required this.bookId,
     required this.memberId,
+    this.copyId,
     required this.loanDate,
     required this.dueDate,
     this.returnedAt,
@@ -37,6 +39,7 @@ class Loan {
       'id': id,
       'bookId': bookId,
       'memberId': memberId,
+      'copyId': copyId,
       'loanDate': loanDate.toIso8601String(),
       'dueDate': dueDate.toIso8601String(),
       'returnedAt': returnedAt?.toIso8601String(),
@@ -48,15 +51,16 @@ class Loan {
   factory Loan.fromMap(Map<String, dynamic> map) {
     return Loan(
       id: map['id'] as int?,
-      bookId: map['bookId'],
-      memberId: map['memberId'],
-      loanDate: DateTime.parse(map['loanDate']),
-      dueDate: DateTime.parse(map['dueDate']),
+      bookId: map['bookId'] as int,
+      memberId: map['memberId'] as int,
+      copyId: map['copyId'] as int?,
+      loanDate: DateTime.parse(map['loanDate'] as String),
+      dueDate: DateTime.parse(map['dueDate'] as String),
       returnedAt: map['returnedAt'] != null
-          ? DateTime.parse(map['returnedAt'])
+          ? DateTime.parse(map['returnedAt'] as String)
           : null,
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
     );
   }
 
@@ -64,6 +68,7 @@ class Loan {
     int? id,
     int? bookId,
     int? memberId,
+    int? copyId,
     DateTime? loanDate,
     DateTime? dueDate,
     DateTime? returnedAt,
@@ -72,6 +77,7 @@ class Loan {
       id: id ?? this.id,
       bookId: bookId ?? this.bookId,
       memberId: memberId ?? this.memberId,
+      copyId: copyId ?? this.copyId,
       loanDate: loanDate ?? this.loanDate,
       dueDate: dueDate ?? this.dueDate,
       returnedAt: returnedAt ?? this.returnedAt,
