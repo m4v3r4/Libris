@@ -1,16 +1,22 @@
-import 'package:libris/common/models/Member.dart';
-import 'package:sqflite/sqflite.dart';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:libris/common/models/loan.dart';
+import 'package:libris/common/models/member.dart';
+import 'package:libris/features/books/models/book.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-import 'package:libris/common/models/loan.dart';
-import 'package:libris/features/books/models/book.dart';
+import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
-  static Database? _database;
+
+  Database? _database;
 
   DatabaseHelper._privateConstructor();
+
+  @visibleForTesting
+  DatabaseHelper.forTesting(Database database) : _database = database;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -30,12 +36,22 @@ class DatabaseHelper {
       },
     );
 
+    await _initializeSchema(db);
+    return db;
+  }
+
+  Future<void> _initializeSchema(Database db) async {
     await _ensureMembersTable(db);
     await _ensureBooksTable(db);
     await _ensureLoansTable(db);
     await _ensureCategoriesTable(db);
-    return db;
   }
+
+  @visibleForTesting
+  Future<void> initializeSchemaForTesting() async {
+    await _initializeSchema(await database);
+  }
+
   // --- CATEGORIES ---
 
   /// Kategoriler tablosunu oluşturur ve varsa kitaplardan veri aktarır
@@ -58,14 +74,14 @@ class DatabaseHelper {
         );
 
         final batch = db.batch();
-        for (var row in result) {
+        for (final row in result) {
           batch.insert('categories', {
             'name': row['category'],
           }, conflictAlgorithm: ConflictAlgorithm.ignore);
         }
         await batch.commit(noResult: true);
       } catch (e) {
-        print('Migration uyarısı: $e');
+        debugPrint('Migration uyarısı: $e');
       }
     }
   }
@@ -73,8 +89,8 @@ class DatabaseHelper {
   /// Kategorileri ve kitap sayılarını getir
   Future<List<Map<String, dynamic>>> getCategoriesWithStats() async {
     final db = await database;
-    return await db.rawQuery('''
-      SELECT c.id, c.name, 
+    return db.rawQuery('''
+      SELECT c.id, c.name,
       (SELECT COUNT(*) FROM books b WHERE b.category = c.name) as book_count
       FROM categories c
       ORDER BY c.name ASC
@@ -95,7 +111,7 @@ class DatabaseHelper {
   /// Yeni kategori ekle
   Future<int> addCategory(String name) async {
     final db = await database;
-    return await db.insert('categories', {'name': name});
+    return db.insert('categories', {'name': name});
   }
 
   /// Kategori güncelle (Kitaplardaki kategori ismini de günceller)
@@ -131,9 +147,7 @@ class DatabaseHelper {
   Future<void> deleteCategory(int id, String name) async {
     final db = await database;
     final count = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM books WHERE category = ?', [
-        name,
-      ]),
+      await db.rawQuery('SELECT COUNT(*) FROM books WHERE category = ?', [name]),
     );
     if (count != null && count > 0) {
       throw Exception(
@@ -144,6 +158,7 @@ class DatabaseHelper {
   }
 
   // --- MEMBERS ---
+
   /// Üyeler tablosunu oluşturur (Eğer yoksa)
   Future<void> _ensureMembersTable(Database db) async {
     await db.execute('''
@@ -162,7 +177,7 @@ class DatabaseHelper {
   /// Yeni üye ekle
   Future<int> insertMember(Member member) async {
     final db = await database;
-    return await db.insert(
+    return db.insert(
       'members',
       member.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -191,7 +206,7 @@ class DatabaseHelper {
   /// Üye bilgilerini güncelle
   Future<int> updateMember(Member member) async {
     final db = await database;
-    return await db.update(
+    return db.update(
       'members',
       member.toMap(),
       where: 'id = ?',
@@ -207,10 +222,10 @@ class DatabaseHelper {
     );
     if ((loanCount ?? 0) > 0) {
       throw Exception(
-        'Bu Ã¼yenin emanet geÃ§miÅŸi olduÄŸu iÃ§in silinemez. Ã–nce emanet kayÄ±tlarÄ±nÄ± temizleyin.',
+        'Bu üyenin emanet geçmişi olduğu için silinemez. Önce emanet kayıtlarını temizleyin.',
       );
     }
-    return await db.delete('members', where: 'id = ?', whereArgs: [id]);
+    return db.delete('members', where: 'id = ?', whereArgs: [id]);
   }
 
   /// Üye ara (İsim, E-posta veya Telefon)
@@ -302,7 +317,7 @@ class DatabaseHelper {
   /// Yeni emanet oluştur (Kitap müsaitlik kontrolü ile)
   Future<int> createLoan(Loan loan) async {
     final db = await database;
-    return await db.transaction((txn) async {
+    return db.transaction((txn) async {
       final active = await txn.query(
         'loans',
         where: 'bookId = ? AND returnedAt IS NULL',
@@ -315,7 +330,6 @@ class DatabaseHelper {
 
       final id = await txn.insert('loans', loan.toMap());
 
-      // Kitabın durumunu 'Emanette' (isAvailable = 0) olarak güncelle
       await txn.update(
         'books',
         {'isAvailable': 0, 'updatedAt': DateTime.now().toIso8601String()},
@@ -330,7 +344,7 @@ class DatabaseHelper {
   /// Emanet kaydını güncelle
   Future<int> updateLoan(Loan loan) async {
     final db = await database;
-    return await db.transaction((txn) async {
+    return db.transaction((txn) async {
       final result = await txn.update(
         'loans',
         loan.toMap(),
@@ -338,7 +352,6 @@ class DatabaseHelper {
         whereArgs: [loan.id],
       );
 
-      // İade edildiyse (returnedAt doluysa) kitabın durumunu güncelle
       if (loan.returnedAt != null) {
         await txn.update(
           'books',
@@ -356,14 +369,14 @@ class DatabaseHelper {
   Future<List<Loan>> getLoans() async {
     final db = await database;
     final maps = await db.query('loans', orderBy: 'loanDate DESC');
-    return maps.map((e) => Loan.fromMap(e)).toList();
+    return maps.map(Loan.fromMap).toList();
   }
 
   /// Aktif (iade edilmemiş) emanetleri detaylı getir
   Future<List<Map<String, dynamic>>> getActiveLoans() async {
     final db = await database;
-    return await db.rawQuery('''
-      SELECT l.*, b.title as bookTitle, m.name as memberName 
+    return db.rawQuery('''
+      SELECT l.*, b.title as bookTitle, m.name as memberName
       FROM loans l
       LEFT JOIN books b ON l.bookId = b.id
       LEFT JOIN members m ON l.memberId = m.id
@@ -381,7 +394,7 @@ class DatabaseHelper {
       whereArgs: [memberId],
       orderBy: 'loanDate DESC',
     );
-    return maps.map((e) => Loan.fromMap(e)).toList();
+    return maps.map(Loan.fromMap).toList();
   }
 
   /// Belirli bir kitaba ait emanet geçmişini getir
@@ -393,37 +406,35 @@ class DatabaseHelper {
       whereArgs: [bookId],
       orderBy: 'loanDate DESC',
     );
-    return maps.map((e) => Loan.fromMap(e)).toList();
+    return maps.map(Loan.fromMap).toList();
   }
 
   /// Kitabı iade al (Tarihi güncelle ve kitabı müsait yap)
   Future<int> returnLoan(int loanId) async {
     final db = await database;
-    return await db.transaction((txn) async {
-      // 1. Emanet kaydını kapat
-      final result = await txn.update(
-        'loans',
-        {
-          'returnedAt': DateTime.now().toIso8601String(),
-          'updatedAt': DateTime.now().toIso8601String(),
-        },
-        where: 'id = ?',
-        whereArgs: [loanId],
-      );
-
-      // 2. Kitabın durumunu 'Müsait' (isAvailable = 1) yap
-      // Önce loanId'den bookId'yi bulmamız lazım
+    return db.transaction((txn) async {
       final loanMaps = await txn.query(
         'loans',
         columns: ['bookId'],
         where: 'id = ?',
         whereArgs: [loanId],
+        limit: 1,
       );
-      if (loanMaps.isNotEmpty) {
-        final bookId = loanMaps.first['bookId'] as int;
+      if (loanMaps.isEmpty) return 0;
+
+      final bookId = loanMaps.first['bookId'] as int;
+      final now = DateTime.now().toIso8601String();
+      final result = await txn.update(
+        'loans',
+        {'returnedAt': now, 'updatedAt': now},
+        where: 'id = ?',
+        whereArgs: [loanId],
+      );
+
+      if (result > 0) {
         await txn.update(
           'books',
-          {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+          {'isAvailable': 1, 'updatedAt': now},
           where: 'id = ?',
           whereArgs: [bookId],
         );
@@ -436,9 +447,9 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getOverdueLoans() async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
-    return await db.rawQuery(
+    return db.rawQuery(
       '''
-      SELECT l.*, b.title as bookTitle, m.name as memberName 
+      SELECT l.*, b.title as bookTitle, m.name as memberName
       FROM loans l
       LEFT JOIN books b ON l.bookId = b.id
       LEFT JOIN members m ON l.memberId = m.id
@@ -452,9 +463,9 @@ class DatabaseHelper {
   /// Son yapılan emanet işlemlerini getir
   Future<List<Map<String, dynamic>>> getRecentLoans({int limit = 10}) async {
     final db = await database;
-    return await db.rawQuery(
+    return db.rawQuery(
       '''
-      SELECT l.*, b.title as bookTitle, m.name as memberName 
+      SELECT l.*, b.title as bookTitle, m.name as memberName
       FROM loans l
       LEFT JOIN books b ON l.bookId = b.id
       LEFT JOIN members m ON l.memberId = m.id
@@ -468,7 +479,31 @@ class DatabaseHelper {
   /// Emanet kaydını tamamen sil
   Future<int> deleteLoan(int id) async {
     final db = await database;
-    return await db.delete('loans', where: 'id = ?', whereArgs: [id]);
+    return db.transaction((txn) async {
+      final loanMaps = await txn.query(
+        'loans',
+        columns: ['bookId', 'returnedAt'],
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      if (loanMaps.isEmpty) return 0;
+
+      final loan = loanMaps.first;
+      final bookId = loan['bookId'] as int;
+      final wasActive = loan['returnedAt'] == null;
+      final result = await txn.delete('loans', where: 'id = ?', whereArgs: [id]);
+
+      if (result > 0 && wasActive) {
+        await txn.update(
+          'books',
+          {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+          where: 'id = ?',
+          whereArgs: [bookId],
+        );
+      }
+      return result;
+    });
   }
 
   // --- BOOKS ---
@@ -493,7 +528,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Migration: Tablo yapısındaki değişiklikleri kontrol et ve eksik kolonları ekle
     final tableInfo = await db.rawQuery('PRAGMA table_info(books)');
     final columns = tableInfo.map((c) => c['name'] as String).toList();
 
@@ -510,7 +544,6 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE books ADD COLUMN location TEXT');
     }
     if (!columns.contains('isAvailable')) {
-      // Varsayılan olarak 1 (Müsait)
       await db.execute(
         'ALTER TABLE books ADD COLUMN isAvailable INTEGER DEFAULT 1',
       );
@@ -520,7 +553,7 @@ class DatabaseHelper {
   /// Kitap Ekle
   Future<int> createBook(Book book) async {
     final db = await database;
-    return await db.insert('books', book.toMap());
+    return db.insert('books', book.toMap());
   }
 
   /// Tüm Kitapları Getir
@@ -545,7 +578,7 @@ class DatabaseHelper {
   /// Kitabın kategorisini güncelle
   Future<int> updateBookCategory(int bookId, String newCategory) async {
     final db = await database;
-    return await db.update(
+    return db.update(
       'books',
       {'category': newCategory, 'updatedAt': DateTime.now().toIso8601String()},
       where: 'id = ?',
@@ -568,7 +601,7 @@ class DatabaseHelper {
   /// Kitap bilgilerini güncelle
   Future<int> updateBook(Book book) async {
     final db = await database;
-    return await db.update(
+    return db.update(
       'books',
       book.toMap(),
       where: 'id = ?',
@@ -584,10 +617,10 @@ class DatabaseHelper {
     );
     if ((loanCount ?? 0) > 0) {
       throw Exception(
-        'Bu kitabÄ±n emanet geÃ§miÅŸi olduÄŸu iÃ§in silinemez. Ã–nce emanet kayÄ±tlarÄ±nÄ± temizleyin.',
+        'Bu kitabın emanet geçmişi olduğu için silinemez. Önce emanet kayıtlarını temizleyin.',
       );
     }
-    return await db.delete('books', where: 'id = ?', whereArgs: [id]);
+    return db.delete('books', where: 'id = ?', whereArgs: [id]);
   }
 
   /// En çok okunan kitaplar (Emanet sayısına göre)
