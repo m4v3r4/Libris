@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:libris/common/models/loan.dart';
 import 'package:libris/common/models/member.dart';
 import 'package:libris/features/books/models/book.dart';
+import 'package:libris/features/books/models/book_copy.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -43,7 +44,9 @@ class DatabaseHelper {
   Future<void> _initializeSchema(Database db) async {
     await _ensureMembersTable(db);
     await _ensureBooksTable(db);
+    await _ensureBookCopiesTableStructure(db);
     await _ensureLoansTable(db);
+    await _backfillBookCopies(db);
     await _ensureCategoriesTable(db);
   }
 
@@ -54,7 +57,7 @@ class DatabaseHelper {
 
   // --- CATEGORIES ---
 
-  /// Kategoriler tablosunu oluşturur ve varsa kitaplardan veri aktarır
+  /// Kategoriler tablosunu oluşturur ve varsa kitaplardan veri aktarır.
   Future<void> _ensureCategoriesTable(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS categories (
@@ -63,7 +66,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Migration: Mevcut kitaplardaki kategorileri buraya aktar
     final count = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM categories'),
     );
@@ -86,7 +88,6 @@ class DatabaseHelper {
     }
   }
 
-  /// Kategorileri ve kitap sayılarını getir
   Future<List<Map<String, dynamic>>> getCategoriesWithStats() async {
     final db = await database;
     return db.rawQuery('''
@@ -97,7 +98,6 @@ class DatabaseHelper {
     ''');
   }
 
-  /// Sadece kategori isimlerini getir
   Future<List<String>> getCategoryNames() async {
     final db = await database;
     final result = await db.query(
@@ -108,13 +108,11 @@ class DatabaseHelper {
     return result.map((e) => e['name'] as String).toList();
   }
 
-  /// Yeni kategori ekle
   Future<int> addCategory(String name) async {
     final db = await database;
     return db.insert('categories', {'name': name});
   }
 
-  /// Kategori güncelle (Kitaplardaki kategori ismini de günceller)
   Future<int> updateCategory(int id, String newName) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -143,7 +141,6 @@ class DatabaseHelper {
     return id;
   }
 
-  /// Kategori sil (Eğer kitap varsa hata fırlatır)
   Future<void> deleteCategory(int id, String name) async {
     final db = await database;
     final count = Sqflite.firstIntValue(
@@ -159,7 +156,6 @@ class DatabaseHelper {
 
   // --- MEMBERS ---
 
-  /// Üyeler tablosunu oluşturur (Eğer yoksa)
   Future<void> _ensureMembersTable(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS members (
@@ -174,7 +170,6 @@ class DatabaseHelper {
     ''');
   }
 
-  /// Yeni üye ekle
   Future<int> insertMember(Member member) async {
     final db = await database;
     return db.insert(
@@ -184,14 +179,12 @@ class DatabaseHelper {
     );
   }
 
-  /// Tüm üyeleri getir (Oluşturulma tarihine göre azalan)
   Future<List<Member>> getMembers() async {
     final db = await database;
     final maps = await db.query('members', orderBy: 'createdAt DESC');
     return maps.map(Member.fromMap).toList();
   }
 
-  /// ID'ye göre üye getir
   Future<Member?> getMemberById(int id) async {
     final db = await database;
     final maps = await db.query(
@@ -203,7 +196,6 @@ class DatabaseHelper {
     return maps.isNotEmpty ? Member.fromMap(maps.first) : null;
   }
 
-  /// Üye bilgilerini güncelle
   Future<int> updateMember(Member member) async {
     final db = await database;
     return db.update(
@@ -214,7 +206,6 @@ class DatabaseHelper {
     );
   }
 
-  /// Üyeyi sil
   Future<int> deleteMember(int id) async {
     final db = await database;
     final loanCount = Sqflite.firstIntValue(
@@ -228,7 +219,6 @@ class DatabaseHelper {
     return db.delete('members', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Üye ara (İsim, E-posta veya Telefon)
   Future<List<Member>> searchMembers(String query) async {
     final db = await database;
     final maps = await db.query(
@@ -239,7 +229,6 @@ class DatabaseHelper {
     return maps.map(Member.fromMap).toList();
   }
 
-  /// En çok kitap okuyanlar (Emanet sayısına göre)
   Future<List<Member>> getTopMembers({int limit = 5}) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
@@ -256,22 +245,377 @@ class DatabaseHelper {
     return maps.map(Member.fromMap).toList();
   }
 
-  /// Son eklenen üyeler
   Future<List<Member>> getLatestMembers({int limit = 5}) async {
     final db = await database;
     final maps = await db.query('members', orderBy: 'id DESC', limit: limit);
     return maps.map(Member.fromMap).toList();
   }
 
+  // --- BOOK COPIES ---
+
+  Future<void> _ensureBookCopiesTableStructure(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS book_copies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bookId INTEGER NOT NULL,
+        inventoryCode TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL DEFAULT 'available',
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (bookId) REFERENCES books(id) ON UPDATE CASCADE ON DELETE RESTRICT
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_book_copies_bookId ON book_copies(bookId)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_book_copies_status ON book_copies(status)',
+    );
+  }
+
+  Future<String> _generateInventoryCode(
+    DatabaseExecutor executor,
+    int bookId,
+  ) async {
+    final count = Sqflite.firstIntValue(
+          await executor.rawQuery(
+            'SELECT COUNT(*) FROM book_copies WHERE bookId = ?',
+            [bookId],
+          ),
+        ) ??
+        0;
+
+    var sequence = count + 1;
+    final bookPart = bookId.toString().padLeft(6, '0');
+    while (true) {
+      final code = 'LBR-$bookPart-${sequence.toString().padLeft(3, '0')}';
+      final existing = await executor.query(
+        'book_copies',
+        columns: ['id'],
+        where: 'inventoryCode = ?',
+        whereArgs: [code],
+        limit: 1,
+      );
+      if (existing.isEmpty) return code;
+      sequence++;
+    }
+  }
+
+  Future<void> _backfillBookCopies(Database db) async {
+    await db.transaction((txn) async {
+      final books = await txn.query('books', columns: ['id']);
+
+      for (final book in books) {
+        final bookId = book['id'] as int;
+        final copies = await txn.query(
+          'book_copies',
+          columns: ['id'],
+          where: 'bookId = ?',
+          whereArgs: [bookId],
+          limit: 1,
+        );
+
+        if (copies.isEmpty) {
+          final now = DateTime.now().toIso8601String();
+          await txn.insert('book_copies', {
+            'bookId': bookId,
+            'inventoryCode': await _generateInventoryCode(txn, bookId),
+            'status': BookCopyStatus.available.name,
+            'createdAt': now,
+            'updatedAt': now,
+          });
+        }
+      }
+
+      final legacyLoans = await txn.query(
+        'loans',
+        columns: ['id', 'bookId', 'returnedAt'],
+        where: 'copyId IS NULL',
+        orderBy: 'loanDate ASC',
+      );
+
+      for (final loan in legacyLoans) {
+        final loanId = loan['id'] as int;
+        final bookId = loan['bookId'] as int;
+        final isActive = loan['returnedAt'] == null;
+
+        List<Map<String, Object?>> copies;
+        if (isActive) {
+          copies = await txn.query(
+            'book_copies',
+            columns: ['id'],
+            where: 'bookId = ? AND status = ?',
+            whereArgs: [bookId, BookCopyStatus.available.name],
+            orderBy: 'id ASC',
+            limit: 1,
+          );
+        } else {
+          copies = await txn.query(
+            'book_copies',
+            columns: ['id'],
+            where: 'bookId = ?',
+            whereArgs: [bookId],
+            orderBy: 'id ASC',
+            limit: 1,
+          );
+        }
+
+        if (copies.isEmpty) continue;
+        final copyId = copies.first['id'] as int;
+        await txn.update(
+          'loans',
+          {'copyId': copyId},
+          where: 'id = ?',
+          whereArgs: [loanId],
+        );
+
+        if (isActive) {
+          await txn.update(
+            'book_copies',
+            {
+              'status': BookCopyStatus.loaned.name,
+              'updatedAt': DateTime.now().toIso8601String(),
+            },
+            where: 'id = ?',
+            whereArgs: [copyId],
+          );
+        }
+      }
+
+      final activeLoans = await txn.query(
+        'loans',
+        columns: ['copyId'],
+        where: 'returnedAt IS NULL AND copyId IS NOT NULL',
+      );
+      for (final loan in activeLoans) {
+        await txn.update(
+          'book_copies',
+          {
+            'status': BookCopyStatus.loaned.name,
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [loan['copyId']],
+        );
+      }
+
+      for (final book in books) {
+        await _syncBookAvailability(txn, book['id'] as int);
+      }
+    });
+  }
+
+  Future<void> _syncBookAvailability(
+    DatabaseExecutor executor,
+    int bookId,
+  ) async {
+    final availableCount = Sqflite.firstIntValue(
+          await executor.rawQuery(
+            'SELECT COUNT(*) FROM book_copies WHERE bookId = ? AND status = ?',
+            [bookId, BookCopyStatus.available.name],
+          ),
+        ) ??
+        0;
+
+    await executor.update(
+      'books',
+      {
+        'isAvailable': availableCount > 0 ? 1 : 0,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [bookId],
+    );
+  }
+
+  Future<List<BookCopy>> getBookCopies(int bookId) async {
+    final db = await database;
+    final maps = await db.query(
+      'book_copies',
+      where: 'bookId = ?',
+      whereArgs: [bookId],
+      orderBy: 'id ASC',
+    );
+    return maps.map(BookCopy.fromMap).toList();
+  }
+
+  Future<List<BookCopy>> getAvailableBookCopies(int bookId) async {
+    final db = await database;
+    final maps = await db.query(
+      'book_copies',
+      where: 'bookId = ? AND status = ?',
+      whereArgs: [bookId, BookCopyStatus.available.name],
+      orderBy: 'id ASC',
+    );
+    return maps.map(BookCopy.fromMap).toList();
+  }
+
+  Future<BookCopy?> getBookCopyById(int id) async {
+    final db = await database;
+    final maps = await db.query(
+      'book_copies',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    return maps.isEmpty ? null : BookCopy.fromMap(maps.first);
+  }
+
+  Future<Map<String, int>> getBookCopyStats(int bookId) async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) AS available,
+        SUM(CASE WHEN status = 'loaned' THEN 1 ELSE 0 END) AS loaned,
+        SUM(CASE WHEN status = 'lost' THEN 1 ELSE 0 END) AS lost,
+        SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) AS maintenance
+      FROM book_copies
+      WHERE bookId = ?
+      ''',
+      [bookId],
+    );
+    final row = rows.first;
+    return {
+      'total': (row['total'] as int?) ?? 0,
+      'available': (row['available'] as int?) ?? 0,
+      'loaned': (row['loaned'] as int?) ?? 0,
+      'lost': (row['lost'] as int?) ?? 0,
+      'maintenance': (row['maintenance'] as int?) ?? 0,
+    };
+  }
+
+  Future<int> createBookCopy(
+    int bookId, {
+    String? inventoryCode,
+    BookCopyStatus status = BookCopyStatus.available,
+  }) async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final book = await txn.query(
+        'books',
+        columns: ['id'],
+        where: 'id = ?',
+        whereArgs: [bookId],
+        limit: 1,
+      );
+      if (book.isEmpty) {
+        throw Exception('Kitap kaydı bulunamadı.');
+      }
+
+      final now = DateTime.now().toIso8601String();
+      final code = inventoryCode?.trim().isNotEmpty == true
+          ? inventoryCode!.trim()
+          : await _generateInventoryCode(txn, bookId);
+
+      final id = await txn.insert('book_copies', {
+        'bookId': bookId,
+        'inventoryCode': code,
+        'status': status.name,
+        'createdAt': now,
+        'updatedAt': now,
+      });
+      await _syncBookAvailability(txn, bookId);
+      return id;
+    });
+  }
+
+  Future<int> updateBookCopyStatus(
+    int copyId,
+    BookCopyStatus status,
+  ) async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final rows = await txn.query(
+        'book_copies',
+        columns: ['bookId', 'status'],
+        where: 'id = ?',
+        whereArgs: [copyId],
+        limit: 1,
+      );
+      if (rows.isEmpty) return 0;
+
+      final bookId = rows.first['bookId'] as int;
+      final activeLoanCount = Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM loans WHERE copyId = ? AND returnedAt IS NULL',
+              [copyId],
+            ),
+          ) ??
+          0;
+
+      if (activeLoanCount > 0) {
+        throw Exception(
+          'Emanetteki bir nüshanın durumu iade alınmadan değiştirilemez.',
+        );
+      }
+      if (status == BookCopyStatus.loaned) {
+        throw Exception(
+          'Emanette durumu yalnızca emanet işlemi sırasında atanabilir.',
+        );
+      }
+
+      final count = await txn.update(
+        'book_copies',
+        {
+          'status': status.name,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [copyId],
+      );
+      await _syncBookAvailability(txn, bookId);
+      return count;
+    });
+  }
+
+  Future<int> deleteBookCopy(int copyId) async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final rows = await txn.query(
+        'book_copies',
+        columns: ['bookId'],
+        where: 'id = ?',
+        whereArgs: [copyId],
+        limit: 1,
+      );
+      if (rows.isEmpty) return 0;
+
+      final loanCount = Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM loans WHERE copyId = ?',
+              [copyId],
+            ),
+          ) ??
+          0;
+      if (loanCount > 0) {
+        throw Exception(
+          'Bu nüshanın emanet geçmişi olduğu için silinemez.',
+        );
+      }
+
+      final bookId = rows.first['bookId'] as int;
+      final count = await txn.delete(
+        'book_copies',
+        where: 'id = ?',
+        whereArgs: [copyId],
+      );
+      await _syncBookAvailability(txn, bookId);
+      return count;
+    });
+  }
+
   // --- LOANS ---
 
-  /// Emanetler tablosunu oluşturur
   Future<void> _ensureLoansTable(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         bookId INTEGER NOT NULL,
         memberId INTEGER NOT NULL,
+        copyId INTEGER,
         loanDate TEXT NOT NULL,
         dueDate TEXT NOT NULL,
         returnedAt TEXT,
@@ -282,7 +626,16 @@ class DatabaseHelper {
       )
     ''');
 
+    final tableInfo = await db.rawQuery('PRAGMA table_info(loans)');
+    final columns = tableInfo.map((c) => c['name'] as String).toList();
+    if (!columns.contains('copyId')) {
+      await db.execute('ALTER TABLE loans ADD COLUMN copyId INTEGER');
+    }
+
     await _ensureLoansForeignKeys(db);
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_loans_copyId ON loans(copyId)',
+    );
   }
 
   Future<void> _ensureLoansForeignKeys(Database db) async {
@@ -296,6 +649,7 @@ class DatabaseHelper {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           bookId INTEGER NOT NULL,
           memberId INTEGER NOT NULL,
+          copyId INTEGER,
           loanDate TEXT NOT NULL,
           dueDate TEXT NOT NULL,
           returnedAt TEXT,
@@ -306,86 +660,136 @@ class DatabaseHelper {
         )
       ''');
       await txn.execute('''
-        INSERT INTO loans (id, bookId, memberId, loanDate, dueDate, returnedAt, createdAt, updatedAt)
-        SELECT id, bookId, memberId, loanDate, dueDate, returnedAt, createdAt, updatedAt
+        INSERT INTO loans (id, bookId, memberId, copyId, loanDate, dueDate, returnedAt, createdAt, updatedAt)
+        SELECT id, bookId, memberId, copyId, loanDate, dueDate, returnedAt, createdAt, updatedAt
         FROM loans_old
       ''');
       await txn.execute('DROP TABLE loans_old');
     });
   }
 
-  /// Yeni emanet oluştur (Kitap müsaitlik kontrolü ile)
   Future<int> createLoan(Loan loan) async {
     final db = await database;
     return db.transaction((txn) async {
-      final active = await txn.query(
-        'loans',
-        where: 'bookId = ? AND returnedAt IS NULL',
-        whereArgs: [loan.bookId],
-      );
+      Map<String, Object?>? copyRow;
 
-      if (active.isNotEmpty) {
-        throw Exception('Bu kitap şu anda emanet verilmiş durumda.');
+      if (loan.copyId != null) {
+        final rows = await txn.query(
+          'book_copies',
+          columns: ['id', 'bookId', 'status'],
+          where: 'id = ?',
+          whereArgs: [loan.copyId],
+          limit: 1,
+        );
+        if (rows.isNotEmpty) copyRow = rows.first;
+      } else {
+        final rows = await txn.query(
+          'book_copies',
+          columns: ['id', 'bookId', 'status'],
+          where: 'bookId = ? AND status = ?',
+          whereArgs: [loan.bookId, BookCopyStatus.available.name],
+          orderBy: 'id ASC',
+          limit: 1,
+        );
+        if (rows.isNotEmpty) copyRow = rows.first;
       }
 
-      final id = await txn.insert('loans', loan.toMap());
+      if (copyRow == null || copyRow['bookId'] != loan.bookId) {
+        throw Exception('Seçilen kitaba ait geçerli bir nüsha bulunamadı.');
+      }
+      if (copyRow['status'] != BookCopyStatus.available.name) {
+        throw Exception('Seçilen nüsha şu anda müsait değil.');
+      }
+
+      final copyId = copyRow['id'] as int;
+      final loanMap = loan.toMap()..['copyId'] = copyId;
+      final id = await txn.insert('loans', loanMap);
 
       await txn.update(
-        'books',
-        {'isAvailable': 0, 'updatedAt': DateTime.now().toIso8601String()},
+        'book_copies',
+        {
+          'status': BookCopyStatus.loaned.name,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
         where: 'id = ?',
-        whereArgs: [loan.bookId],
+        whereArgs: [copyId],
       );
-
+      await _syncBookAvailability(txn, loan.bookId);
       return id;
     });
   }
 
-  /// Emanet kaydını güncelle
   Future<int> updateLoan(Loan loan) async {
     final db = await database;
     return db.transaction((txn) async {
+      if (loan.id == null) return 0;
+
+      final existingRows = await txn.query(
+        'loans',
+        where: 'id = ?',
+        whereArgs: [loan.id],
+        limit: 1,
+      );
+      if (existingRows.isEmpty) return 0;
+
+      final existing = existingRows.first;
+      final existingBookId = existing['bookId'] as int;
+      final existingCopyId = existing['copyId'] as int?;
+      final wasActive = existing['returnedAt'] == null;
+      final targetCopyId = loan.copyId ?? existingCopyId;
+
+      if (wasActive &&
+          (loan.bookId != existingBookId || targetCopyId != existingCopyId)) {
+        throw Exception(
+          'Aktif bir emanetin kitabı veya nüshası değiştirilemez. Önce iade alın.',
+        );
+      }
+
+      final loanMap = loan.toMap()..['copyId'] = targetCopyId;
       final result = await txn.update(
         'loans',
-        loan.toMap(),
+        loanMap,
         where: 'id = ?',
         whereArgs: [loan.id],
       );
 
-      if (loan.returnedAt != null) {
+      if (wasActive && loan.returnedAt != null && existingCopyId != null) {
         await txn.update(
-          'books',
-          {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+          'book_copies',
+          {
+            'status': BookCopyStatus.available.name,
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
           where: 'id = ?',
-          whereArgs: [loan.bookId],
+          whereArgs: [existingCopyId],
         );
+        await _syncBookAvailability(txn, existingBookId);
       }
 
       return result;
     });
   }
 
-  /// Tüm emanetleri getir
   Future<List<Loan>> getLoans() async {
     final db = await database;
     final maps = await db.query('loans', orderBy: 'loanDate DESC');
     return maps.map(Loan.fromMap).toList();
   }
 
-  /// Aktif (iade edilmemiş) emanetleri detaylı getir
   Future<List<Map<String, dynamic>>> getActiveLoans() async {
     final db = await database;
     return db.rawQuery('''
-      SELECT l.*, b.title as bookTitle, m.name as memberName
+      SELECT l.*, b.title as bookTitle, m.name as memberName,
+             c.inventoryCode as inventoryCode
       FROM loans l
       LEFT JOIN books b ON l.bookId = b.id
       LEFT JOIN members m ON l.memberId = m.id
+      LEFT JOIN book_copies c ON l.copyId = c.id
       WHERE l.returnedAt IS NULL
       ORDER BY l.dueDate ASC
     ''');
   }
 
-  /// Belirli bir üyeye ait emanetleri getir
   Future<List<Loan>> getLoansByMember(int memberId) async {
     final db = await database;
     final maps = await db.query(
@@ -397,7 +801,6 @@ class DatabaseHelper {
     return maps.map(Loan.fromMap).toList();
   }
 
-  /// Belirli bir kitaba ait emanet geçmişini getir
   Future<List<Loan>> getLoansByBook(int bookId) async {
     final db = await database;
     final maps = await db.query(
@@ -409,20 +812,21 @@ class DatabaseHelper {
     return maps.map(Loan.fromMap).toList();
   }
 
-  /// Kitabı iade al (Tarihi güncelle ve kitabı müsait yap)
   Future<int> returnLoan(int loanId) async {
     final db = await database;
     return db.transaction((txn) async {
       final loanMaps = await txn.query(
         'loans',
-        columns: ['bookId'],
+        columns: ['bookId', 'copyId', 'returnedAt'],
         where: 'id = ?',
         whereArgs: [loanId],
         limit: 1,
       );
       if (loanMaps.isEmpty) return 0;
+      if (loanMaps.first['returnedAt'] != null) return 0;
 
       final bookId = loanMaps.first['bookId'] as int;
+      final copyId = loanMaps.first['copyId'] as int?;
       final now = DateTime.now().toIso8601String();
       final result = await txn.update(
         'loans',
@@ -431,28 +835,32 @@ class DatabaseHelper {
         whereArgs: [loanId],
       );
 
-      if (result > 0) {
+      if (result > 0 && copyId != null) {
         await txn.update(
-          'books',
-          {'isAvailable': 1, 'updatedAt': now},
+          'book_copies',
+          {'status': BookCopyStatus.available.name, 'updatedAt': now},
           where: 'id = ?',
-          whereArgs: [bookId],
+          whereArgs: [copyId],
         );
+      }
+      if (result > 0) {
+        await _syncBookAvailability(txn, bookId);
       }
       return result;
     });
   }
 
-  /// Gecikmiş (teslim tarihi geçmiş ve iade edilmemiş) emanetleri getir
   Future<List<Map<String, dynamic>>> getOverdueLoans() async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
     return db.rawQuery(
       '''
-      SELECT l.*, b.title as bookTitle, m.name as memberName
+      SELECT l.*, b.title as bookTitle, m.name as memberName,
+             c.inventoryCode as inventoryCode
       FROM loans l
       LEFT JOIN books b ON l.bookId = b.id
       LEFT JOIN members m ON l.memberId = m.id
+      LEFT JOIN book_copies c ON l.copyId = c.id
       WHERE l.returnedAt IS NULL AND l.dueDate < ?
       ORDER BY l.dueDate ASC
     ''',
@@ -460,15 +868,16 @@ class DatabaseHelper {
     );
   }
 
-  /// Son yapılan emanet işlemlerini getir
   Future<List<Map<String, dynamic>>> getRecentLoans({int limit = 10}) async {
     final db = await database;
     return db.rawQuery(
       '''
-      SELECT l.*, b.title as bookTitle, m.name as memberName
+      SELECT l.*, b.title as bookTitle, m.name as memberName,
+             c.inventoryCode as inventoryCode
       FROM loans l
       LEFT JOIN books b ON l.bookId = b.id
       LEFT JOIN members m ON l.memberId = m.id
+      LEFT JOIN book_copies c ON l.copyId = c.id
       ORDER BY l.updatedAt DESC
       LIMIT ?
     ''',
@@ -476,13 +885,12 @@ class DatabaseHelper {
     );
   }
 
-  /// Emanet kaydını tamamen sil
   Future<int> deleteLoan(int id) async {
     final db = await database;
     return db.transaction((txn) async {
       final loanMaps = await txn.query(
         'loans',
-        columns: ['bookId', 'returnedAt'],
+        columns: ['bookId', 'copyId', 'returnedAt'],
         where: 'id = ?',
         whereArgs: [id],
         limit: 1,
@@ -491,16 +899,23 @@ class DatabaseHelper {
 
       final loan = loanMaps.first;
       final bookId = loan['bookId'] as int;
+      final copyId = loan['copyId'] as int?;
       final wasActive = loan['returnedAt'] == null;
       final result = await txn.delete('loans', where: 'id = ?', whereArgs: [id]);
 
-      if (result > 0 && wasActive) {
+      if (result > 0 && wasActive && copyId != null) {
         await txn.update(
-          'books',
-          {'isAvailable': 1, 'updatedAt': DateTime.now().toIso8601String()},
+          'book_copies',
+          {
+            'status': BookCopyStatus.available.name,
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
           where: 'id = ?',
-          whereArgs: [bookId],
+          whereArgs: [copyId],
         );
+      }
+      if (result > 0) {
+        await _syncBookAvailability(txn, bookId);
       }
       return result;
     });
@@ -508,7 +923,6 @@ class DatabaseHelper {
 
   // --- BOOKS ---
 
-  /// Kitaplar tablosunu oluşturur ve eksik kolonları ekler
   Future<void> _ensureBooksTable(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS books (
@@ -550,20 +964,30 @@ class DatabaseHelper {
     }
   }
 
-  /// Kitap Ekle
   Future<int> createBook(Book book) async {
     final db = await database;
-    return db.insert('books', book.toMap());
+    return db.transaction((txn) async {
+      final bookMap = book.toMap()..remove('id');
+      final bookId = await txn.insert('books', bookMap);
+      final now = DateTime.now().toIso8601String();
+      await txn.insert('book_copies', {
+        'bookId': bookId,
+        'inventoryCode': await _generateInventoryCode(txn, bookId),
+        'status': BookCopyStatus.available.name,
+        'createdAt': now,
+        'updatedAt': now,
+      });
+      await _syncBookAvailability(txn, bookId);
+      return bookId;
+    });
   }
 
-  /// Tüm Kitapları Getir
   Future<List<Book>> getBooks() async {
     final db = await database;
     final maps = await db.query('books', orderBy: 'title ASC');
     return maps.map(Book.fromMap).toList();
   }
 
-  /// Kategoriye göre kitapları getir
   Future<List<Book>> getBooksByCategory(String category) async {
     final db = await database;
     final maps = await db.query(
@@ -575,7 +999,6 @@ class DatabaseHelper {
     return maps.map(Book.fromMap).toList();
   }
 
-  /// Kitabın kategorisini güncelle
   Future<int> updateBookCategory(int bookId, String newCategory) async {
     final db = await database;
     return db.update(
@@ -586,7 +1009,6 @@ class DatabaseHelper {
     );
   }
 
-  /// ID'ye göre kitap detayını getir
   Future<Book?> getBookById(int id) async {
     final db = await database;
     final maps = await db.query(
@@ -598,32 +1020,41 @@ class DatabaseHelper {
     return maps.isNotEmpty ? Book.fromMap(maps.first) : null;
   }
 
-  /// Kitap bilgilerini güncelle
   Future<int> updateBook(Book book) async {
     final db = await database;
-    return db.update(
-      'books',
-      book.toMap(),
-      where: 'id = ?',
-      whereArgs: [book.id],
-    );
+    return db.transaction((txn) async {
+      final map = book.toMap();
+      final count = await txn.update(
+        'books',
+        map,
+        where: 'id = ?',
+        whereArgs: [book.id],
+      );
+      if (book.id != null) {
+        await _syncBookAvailability(txn, book.id!);
+      }
+      return count;
+    });
   }
 
-  /// Kitabı sil
   Future<int> deleteBook(int id) async {
     final db = await database;
-    final loanCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM loans WHERE bookId = ?', [id]),
-    );
-    if ((loanCount ?? 0) > 0) {
-      throw Exception(
-        'Bu kitabın emanet geçmişi olduğu için silinemez. Önce emanet kayıtlarını temizleyin.',
-      );
-    }
-    return db.delete('books', where: 'id = ?', whereArgs: [id]);
+    return db.transaction((txn) async {
+      final loanCount = Sqflite.firstIntValue(
+            await txn.rawQuery('SELECT COUNT(*) FROM loans WHERE bookId = ?', [id]),
+          ) ??
+          0;
+      if (loanCount > 0) {
+        throw Exception(
+          'Bu kitabın emanet geçmişi olduğu için silinemez. Önce emanet kayıtlarını temizleyin.',
+        );
+      }
+
+      await txn.delete('book_copies', where: 'bookId = ?', whereArgs: [id]);
+      return txn.delete('books', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
-  /// En çok okunan kitaplar (Emanet sayısına göre)
   Future<List<Book>> getTopBooks({int limit = 5}) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
@@ -641,7 +1072,6 @@ class DatabaseHelper {
     return maps.map(Book.fromMap).toList();
   }
 
-  /// Son eklenen kitaplar
   Future<List<Book>> getLatestBooks({int limit = 5}) async {
     final db = await database;
     final maps = await db.query('books', orderBy: 'id DESC', limit: limit);
