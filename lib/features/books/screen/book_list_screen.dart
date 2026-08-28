@@ -36,10 +36,19 @@ class _BookListScreenState extends State<BookListScreen> {
   Future<void> _loadBooks() async {
     setState(() => _isLoading = true);
     final books = await _databaseHelper.getBooks();
+    if (!mounted) return;
     setState(() {
       _books = books;
       _isLoading = false;
     });
+  }
+
+  Future<void> _openBookDetail(Book book) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
+    );
+    await _loadBooks();
   }
 
   List<Book> get _filteredBooks {
@@ -142,14 +151,7 @@ class _BookListScreenState extends State<BookListScreen> {
                       return BookItemWidget(
                         book: book,
                         viewType: _viewType,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BookDetailScreen(book: book),
-                            ),
-                          );
-                        },
+                        onTap: () => _openBookDetail(book),
                         onEdit: () => _navigateToEditBook(book),
                         onDelete: () => _deleteBook(book.id!),
                       );
@@ -177,14 +179,7 @@ class _BookListScreenState extends State<BookListScreen> {
                           return BookItemWidget(
                             book: book,
                             viewType: _viewType,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => BookDetailScreen(book: book),
-                                ),
-                              );
-                            },
+                            onTap: () => _openBookDetail(book),
                             onEdit: () => _navigateToEditBook(book),
                             onDelete: () => _deleteBook(book.id!),
                           );
@@ -207,7 +202,7 @@ class _BookListScreenState extends State<BookListScreen> {
       context,
       MaterialPageRoute(builder: (_) => const BookFormScreen()),
     );
-    _loadBooks();
+    await _loadBooks();
   }
 
   Future<void> _navigateToEditBook(Book book) async {
@@ -215,11 +210,11 @@ class _BookListScreenState extends State<BookListScreen> {
       context,
       MaterialPageRoute(builder: (_) => BookFormScreen(book: book)),
     );
-    _loadBooks();
+    await _loadBooks();
   }
 
   Future<void> _deleteBook(int id) async {
     await _databaseHelper.deleteBook(id);
-    _loadBooks();
+    await _loadBooks();
   }
 }

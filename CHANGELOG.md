@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased - v1.2.0
+
+### Added
+- Physical book copy / stock tracking through a new `book_copies` table.
+- Unique inventory/barcode identifiers for every physical copy.
+- Copy-level states: available, loaned, lost, and maintenance.
+- Copy management directly from the book detail screen.
+- Copy inventory codes on loan cards and detailed loan queries.
+- Regression tests for copy creation, availability, multi-copy loans, returns, deletion rules, and legacy data backfill.
+
+### Changed
+- Loans now reference a specific physical copy through nullable `loans.copyId`.
+- A bibliographic book remains available as long as at least one physical copy is available.
+- Multiple copies of the same title can be loaned at the same time.
+- Active loans lock their physical copy until the loan is returned or deleted.
+- New books automatically receive one initial physical copy.
+- Application version updated to `1.2.0+4`.
+
+### Compatibility
+- Existing v1.1 books are preserved and receive an automatically generated initial copy.
+- Existing loan history is preserved and linked to the generated copy where possible.
+- The postponed DB v2 migration system is not introduced by this release; the database continues using the current v1.x initialization approach.
+
 ## v1.1.0 - 2026-08-28
 
 ### Fixed
