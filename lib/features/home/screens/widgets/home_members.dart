@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:libris/common/models/Member.dart';
+import 'package:flutter/material.dart';
+import 'package:libris/common/models/member.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +10,8 @@ class HomeMembers extends StatefulWidget {
   State<HomeMembers> createState() => _HomeMembersState();
 }
 
-class _HomeMembersState extends State<HomeMembers> with SingleTickerProviderStateMixin {
+class _HomeMembersState extends State<HomeMembers>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   DatabaseProvider? _provider;
   late Future<List<List<Member>>> _statsFuture;
@@ -68,15 +69,15 @@ class _HomeMembersState extends State<HomeMembers> with SingleTickerProviderStat
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(
-              'Uye Istatistikleri',
+              'Üye İstatistikleri',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
           TabBar(
             controller: _tabController,
             tabs: const [
-              Tab(text: 'En Cok Okuyanlar'),
-              Tab(text: 'Son Uyeler'),
+              Tab(text: 'En Çok Okuyanlar'),
+              Tab(text: 'Son Üyeler'),
             ],
           ),
           Expanded(
@@ -91,8 +92,16 @@ class _HomeMembersState extends State<HomeMembers> with SingleTickerProviderStat
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildMemberList(data[0], Icons.star, const Color(0xFFE95420)),
-                    _buildMemberList(data[1], Icons.person_add, const Color(0xFF2C001E)),
+                    _buildMemberList(
+                      data[0],
+                      Icons.star,
+                      const Color(0xFFE95420),
+                    ),
+                    _buildMemberList(
+                      data[1],
+                      Icons.person_add,
+                      const Color(0xFF2C001E),
+                    ),
                   ],
                 );
               },
@@ -103,9 +112,13 @@ class _HomeMembersState extends State<HomeMembers> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildMemberList(List<Member> members, IconData icon, Color iconColor) {
+  Widget _buildMemberList(
+    List<Member> members,
+    IconData icon,
+    Color iconColor,
+  ) {
     if (members.isEmpty) {
-      return const Center(child: Text('Kayit bulunamadi.'));
+      return const Center(child: Text('Kayıt bulunamadı.'));
     }
 
     return ListView.separated(
@@ -135,4 +148,3 @@ class _HomeMembersState extends State<HomeMembers> with SingleTickerProviderStat
     );
   }
 }
-
