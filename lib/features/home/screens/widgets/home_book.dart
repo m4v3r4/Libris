@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/books/models/book.dart';
 import 'package:provider/provider.dart';
@@ -68,14 +68,14 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(
-              'Kitap Istatistikleri',
+              'Kitap İstatistikleri',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
           TabBar(
             controller: _tabController,
             tabs: const [
-              Tab(text: 'En Cok Okunanlar'),
+              Tab(text: 'En Çok Okunanlar'),
               Tab(text: 'Son Eklenenler'),
             ],
           ),
@@ -91,8 +91,16 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildBookList(data[0], Icons.auto_stories, const Color(0xFFE95420)),
-                    _buildBookList(data[1], Icons.new_releases, const Color(0xFF2C001E)),
+                    _buildBookList(
+                      data[0],
+                      Icons.auto_stories,
+                      const Color(0xFFE95420),
+                    ),
+                    _buildBookList(
+                      data[1],
+                      Icons.new_releases,
+                      const Color(0xFF2C001E),
+                    ),
                   ],
                 );
               },
@@ -105,7 +113,7 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
 
   Widget _buildBookList(List<Book> books, IconData icon, Color iconColor) {
     if (books.isEmpty) {
-      return const Center(child: Text('Kayit bulunamadi.'));
+      return const Center(child: Text('Kayıt bulunamadı.'));
     }
 
     return ListView.separated(
@@ -135,4 +143,3 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
     );
   }
 }
-
