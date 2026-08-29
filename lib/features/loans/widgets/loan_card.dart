@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/models/loan.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
@@ -24,8 +25,8 @@ class LoanCard extends StatefulWidget {
 class _LoanCardState extends State<LoanCard> {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
-  String _bookTitle = 'Yükleniyor...';
-  String _memberName = 'Yükleniyor...';
+  String _bookTitle = '';
+  String _memberName = '';
   String? _copyCode;
 
   @override
@@ -43,8 +44,8 @@ class _LoanCardState extends State<LoanCard> {
 
     if (!mounted) return;
     setState(() {
-      _bookTitle = book?.title ?? 'Silinmiş Kayıt';
-      _memberName = member?.name ?? 'Silinmiş Kayıt';
+      _bookTitle = book?.title ?? l10n('Silinmiş kayıt', 'Deleted record');
+      _memberName = member?.name ?? l10n('Silinmiş kayıt', 'Deleted record');
       _copyCode = copy?.inventoryCode;
     });
   }
@@ -59,47 +60,53 @@ class _LoanCardState extends State<LoanCard> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final scheme = Theme.of(context).colorScheme;
+    final bookTitle = _bookTitle.isEmpty ? l10n('Yükleniyor...', 'Loading...') : _bookTitle;
+    final memberName = _memberName.isEmpty ? l10n('Yükleniyor...', 'Loading...') : _memberName;
 
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
+    final Color statusColor;
+    final String statusText;
+    final IconData statusIcon;
 
     if (isReturned) {
-      statusColor = Colors.green;
-      statusText = 'İade Edildi';
-      statusIcon = Icons.check_circle;
+      statusColor = scheme.tertiary;
+      statusText = l10n('İade edildi', 'Returned');
+      statusIcon = Icons.check_circle_outline_rounded;
     } else if (isOverdue) {
-      statusColor = colorScheme.error;
-      statusText = 'Gecikmiş';
-      statusIcon = Icons.warning;
+      statusColor = scheme.error;
+      statusText = l10n('Gecikmiş', 'Overdue');
+      statusIcon = Icons.warning_amber_rounded;
     } else {
-      statusColor = Colors.orange;
-      statusText = 'Emanette';
-      statusIcon = Icons.access_time_filled;
+      statusColor = scheme.primary;
+      statusText = l10n('Emanette', 'On loan');
+      statusIcon = Icons.schedule_rounded;
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(14),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.book, color: statusColor, size: 28),
+                    child: Icon(
+                      Icons.menu_book_rounded,
+                      color: statusColor,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -107,79 +114,57 @@ class _LoanCardState extends State<LoanCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _bookTitle,
+                          bookTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                             fontSize: 16,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
+                        const SizedBox(height: 5),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
                           children: [
-                            Icon(
-                              Icons.person,
-                              size: 16,
-                              color: Colors.grey[600],
+                            _LoanMeta(
+                              icon: Icons.person_outline_rounded,
+                              text: memberName,
                             ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                _memberName,
-                                style: TextStyle(color: Colors.grey[700]),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            if (_copyCode != null)
+                              _LoanMeta(
+                                icon: Icons.inventory_2_outlined,
+                                text: _copyCode!,
                               ),
-                            ),
                           ],
                         ),
-                        if (_copyCode != null) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.inventory_2_outlined,
-                                size: 15,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _copyCode!,
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),
+                  const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 9,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: statusColor.withValues(alpha: 0.3),
+                        color: statusColor.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(statusIcon, size: 12, color: statusColor),
+                        Icon(statusIcon, size: 13, color: statusColor),
                         const SizedBox(width: 4),
                         Text(
                           statusText,
                           style: TextStyle(
                             color: statusColor,
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -187,39 +172,46 @@ class _LoanCardState extends State<LoanCard> {
                   ),
                 ],
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(height: 12),
+              Divider(height: 1, color: scheme.outlineVariant),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 18,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _buildDateInfo('Veriliş', widget.loan.loanDate),
-                  Icon(Icons.arrow_forward, size: 16, color: Colors.grey[400]),
-                  _buildDateInfo(
-                    'Son Tarih',
-                    widget.loan.dueDate,
-                    isOverdue: isOverdue,
+                  _DateInfo(
+                    label: l10n('Veriliş', 'Loaned'),
+                    value: _formatDate(widget.loan.loanDate),
                   ),
+                  _DateInfo(
+                    label: l10n('Son tarih', 'Due date'),
+                    value: _formatDate(widget.loan.dueDate),
+                    color: isOverdue ? scheme.error : null,
+                  ),
+                  if (isReturned)
+                    _DateInfo(
+                      label: l10n('İade', 'Returned'),
+                      value: _formatDate(widget.loan.returnedAt!),
+                      color: scheme.tertiary,
+                    ),
+                  const SizedBox(width: 4),
                   if (widget.onEdit != null)
-                    IconButton(
-                      icon: const Icon(Icons.edit, size: 20),
+                    OutlinedButton.icon(
                       onPressed: widget.onEdit,
-                      tooltip: 'Düzenle',
+                      icon: const Icon(Icons.edit_outlined, size: 17),
+                      label: Text(l10n('Düzenle', 'Edit')),
                     ),
-                  if (!isReturned && widget.onReturn != null) ...[
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
+                  if (!isReturned && widget.onReturn != null)
+                    FilledButton.tonalIcon(
                       onPressed: widget.onReturn,
-                      style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      child: const Text('İade Al'),
+                      icon: const Icon(Icons.assignment_return_rounded, size: 17),
+                      label: Text(l10n('İade Al', 'Return')),
                     ),
-                    FilledButton.tonal(
-                      onPressed: () {
-                        Navigator.push(
+                  if (!isReturned && widget.onEdit == null)
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
@@ -227,24 +219,9 @@ class _LoanCardState extends State<LoanCard> {
                           ),
                         );
                       },
-                      style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      child: const Text('Düzenle'),
+                      icon: const Icon(Icons.edit_outlined, size: 17),
+                      label: Text(l10n('Düzenle', 'Edit')),
                     ),
-                  ] else if (isReturned) ...[
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 16,
-                      color: Colors.grey[400],
-                    ),
-                    _buildDateInfo(
-                      'İade',
-                      widget.loan.returnedAt!,
-                      isSuccess: true,
-                    ),
-                  ],
                 ],
               ),
             ],
@@ -253,25 +230,65 @@ class _LoanCardState extends State<LoanCard> {
       ),
     );
   }
+}
 
-  Widget _buildDateInfo(
-    String label,
-    DateTime date, {
-    bool isOverdue = false,
-    bool isSuccess = false,
-  }) {
-    Color color = Colors.black87;
-    if (isOverdue) color = Colors.red;
-    if (isSuccess) color = Colors.green;
+class _LoanMeta extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _LoanMeta({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: scheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 220),
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DateInfo extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? color;
+
+  const _DateInfo({required this.label, required this.value, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         Text(
-          _formatDate(date),
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          value,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             fontSize: 13,
             color: color,
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -13,10 +14,19 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
-      items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Kitaplar'),
-        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Üyeler'),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Ayarlar'),
+      items: <BottomNavigationBarItem>[
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.book),
+          label: l10n('Kitaplar', 'Books'),
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.people),
+          label: l10n('Üyeler', 'Members'),
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.settings),
+          label: l10n('Ayarlar', 'Settings'),
+        ),
       ],
       currentIndex: selectedIndex,
       selectedItemColor: Theme.of(context).colorScheme.primary,

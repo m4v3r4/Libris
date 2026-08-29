@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/models/loan.dart';
 import 'package:libris/common/providers/database_provider.dart';
+import 'package:libris/common/widgets/section_toolbar.dart';
 import 'package:libris/features/loans/screen/loan_form_screen.dart';
 import 'package:libris/features/loans/widgets/loan_card.dart';
 import 'package:provider/provider.dart';
@@ -45,7 +47,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
   }
 
   void _applyFilters() {
-    List<Loan> result = _allLoans;
+    List<Loan> result = List<Loan>.from(_allLoans);
 
     switch (_filterStatus) {
       case LoanFilterStatus.active:
@@ -75,7 +77,26 @@ class _LoanListScreenState extends State<LoanListScreen> {
       }).toList();
     }
 
+    result.sort((a, b) => b.loanDate.compareTo(a.loanDate));
     _filteredLoans = result;
+  }
+
+  int _countFor(LoanFilterStatus status) {
+    final now = DateTime.now();
+    switch (status) {
+      case LoanFilterStatus.all:
+        return _allLoans.length;
+      case LoanFilterStatus.active:
+        return _allLoans.where((loan) => loan.returnedAt == null).length;
+      case LoanFilterStatus.overdue:
+        return _allLoans
+            .where(
+              (loan) => loan.returnedAt == null && now.isAfter(loan.dueDate),
+            )
+            .length;
+      case LoanFilterStatus.returned:
+        return _allLoans.where((loan) => loan.returnedAt != null).length;
+    }
   }
 
   Future<void> _openForm() async {
@@ -83,13 +104,13 @@ class _LoanListScreenState extends State<LoanListScreen> {
       context,
       MaterialPageRoute(builder: (_) => const LoanFormScreen()),
     );
-    _loadLoans();
+    await _loadLoans();
   }
 
   Future<void> _returnLoan(Loan loan) async {
     if (loan.id == null) return;
     await context.read<DatabaseProvider>().returnLoan(loan.id!);
-    _loadLoans();
+    await _loadLoans();
   }
 
   Future<void> _pickDateRange() async {
@@ -98,6 +119,9 @@ class _LoanListScreenState extends State<LoanListScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: _dateRange,
+      helpText: l10n('Tarih aralığı seçin', 'Select date range'),
+      cancelText: l10n('İptal', 'Cancel'),
+      confirmText: l10n('Uygula', 'Apply'),
     );
     if (picked != null) {
       setState(() {
@@ -110,69 +134,112 @@ class _LoanListScreenState extends State<LoanListScreen> {
   String _getStatusLabel(LoanFilterStatus status) {
     switch (status) {
       case LoanFilterStatus.all:
-        return 'Tümü';
+        return l10n('Tümü', 'All');
       case LoanFilterStatus.active:
-        return 'Emanette';
+        return l10n('Emanette', 'Active');
       case LoanFilterStatus.overdue:
-        return 'Gecikmiş';
+        return l10n('Gecikmiş', 'Overdue');
       case LoanFilterStatus.returned:
-        return 'İade Edilen';
+        return l10n('İade edilen', 'Returned');
+    }
+  }
+
+  String _formatShortDate(DateTime date) {
+    return '${date.day}.${date.month}.${date.year}';
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _filterStatus = LoanFilterStatus.all;
+      _dateRange = null;
+      _applyFilters();
+    });
+  }
+
+  void _close() {
+    if (widget.embedded) {
+      widget.onClose?.call();
+    } else {
+      Navigator.maybePop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final hasFilters =
+        _filterStatus != LoanFilterStatus.all || _dateRange != null;
+
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: widget.embedded
-            ? IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
-              )
-            : null,
-        title: widget.embedded ? null : const Text('Emanetler'),
-      ),
       body: Column(
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
+          SectionToolbar(
+            title: l10n('Emanetler', 'Loans'),
+            subtitle: l10n(
+              'Ödünç, gecikme ve iade hareketlerini takip edin.',
+              'Track lending, overdue, and return activity.',
+            ),
+            icon: Icons.swap_horiz_rounded,
+            count: _filteredLoans.length,
+            onClose: _close,
+            leadingIcon:
+                widget.embedded ? Icons.close_rounded : Icons.arrow_back_rounded,
+            leadingTooltip:
+                widget.embedded ? l10n('Kapat', 'Close') : l10n('Geri', 'Back'),
+            actions: [
+              IconButton(
+                onPressed: _loadLoans,
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: l10n('Yenile', 'Refresh'),
+              ),
+            ],
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            color: scheme.surface.withValues(alpha: 0.45),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 InputChip(
-                  avatar: const Icon(Icons.calendar_today, size: 16),
+                  avatar: const Icon(Icons.calendar_today_outlined, size: 16),
                   label: Text(
                     _dateRange == null
-                        ? 'Tarih Aralığı'
-                        : '${_dateRange!.start.day}.${_dateRange!.start.month} - ${_dateRange!.end.day}.${_dateRange!.end.month}',
+                        ? l10n('Tarih aralığı', 'Date range')
+                        : '${_formatShortDate(_dateRange!.start)} – ${_formatShortDate(_dateRange!.end)}',
                   ),
                   onPressed: _pickDateRange,
-                  onDeleted: _dateRange != null
-                      ? () {
+                  onDeleted: _dateRange == null
+                      ? null
+                      : () {
                           setState(() {
                             _dateRange = null;
                             _applyFilters();
                           });
-                        }
-                      : null,
+                        },
                 ),
-                const SizedBox(width: 8),
                 ...LoanFilterStatus.values.map((status) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: FilterChip(
-                      label: Text(_getStatusLabel(status)),
-                      selected: _filterStatus == status,
-                      onSelected: (selected) {
-                        setState(() {
-                          _filterStatus = status;
-                          _applyFilters();
-                        });
-                      },
+                  return FilterChip(
+                    label: Text(
+                      '${_getStatusLabel(status)}  ${_countFor(status)}',
                     ),
+                    selected: _filterStatus == status,
+                    onSelected: (_) {
+                      setState(() {
+                        _filterStatus = status;
+                        _applyFilters();
+                      });
+                    },
                   );
                 }),
+                if (hasFilters)
+                  TextButton.icon(
+                    onPressed: _clearFilters,
+                    icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                    label: Text(l10n('Filtreleri Temizle', 'Clear Filters')),
+                  ),
               ],
             ),
           ),
@@ -180,23 +247,48 @@ class _LoanListScreenState extends State<LoanListScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredLoans.isEmpty
-                ? const Center(child: Text('Kayıt bulunamadı'))
-                : ListView.builder(
-                    itemCount: _filteredLoans.length,
-                    itemBuilder: (context, index) {
-                      final loan = _filteredLoans[index];
-                      return LoanCard(
-                        loan: loan,
-                        onReturn: () => _returnLoan(loan),
-                      );
-                    },
-                  ),
+                    ? SectionEmptyState(
+                        icon: _allLoans.isEmpty
+                            ? Icons.swap_horizontal_circle_outlined
+                            : Icons.filter_alt_off_outlined,
+                        title: _allLoans.isEmpty
+                            ? l10n('Henüz emanet kaydı yok', 'No loan records yet')
+                            : l10n(
+                                'Bu filtrelerle eşleşen kayıt yok',
+                                'No records match these filters',
+                              ),
+                        description: _allLoans.isEmpty
+                            ? l10n(
+                                'İlk ödünç işlemini başlatarak emanet hareketlerini burada takip edin.',
+                                'Start your first lending transaction to track loan activity here.',
+                              )
+                            : l10n(
+                                'Filtreleri değiştirin veya temizleyin.',
+                                'Change or clear the filters.',
+                              ),
+                        actionLabel:
+                            _allLoans.isEmpty ? l10n('Emanet Ver', 'Create Loan') : null,
+                        onAction: _allLoans.isEmpty ? _openForm : null,
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 92),
+                        itemCount: _filteredLoans.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final loan = _filteredLoans[index];
+                          return LoanCard(
+                            loan: loan,
+                            onReturn: () => _returnLoan(loan),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _openForm,
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(l10n('Emanet Ver', 'Create Loan')),
       ),
     );
   }

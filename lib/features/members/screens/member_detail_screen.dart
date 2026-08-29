@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/models/member.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/members/screens/member_form_screen.dart';
@@ -40,17 +41,22 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     final provider = context.read<DatabaseProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Üyeyi Sil'),
-        content: const Text('Bu üyeyi silmek istediğinize emin misiniz?'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n('Üyeyi Sil', 'Delete Member')),
+        content: Text(
+          l10n(
+            'Bu üyeyi silmek istediğinize emin misiniz?',
+            'Are you sure you want to delete this member?',
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n('İptal', 'Cancel')),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sil'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n('Sil', 'Delete')),
           ),
         ],
       ),
@@ -74,10 +80,18 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Üye Detayı'),
+        title: Text(l10n('Üye Detayı', 'Member Details')),
         actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: _editMember),
-          IconButton(icon: const Icon(Icons.delete), onPressed: _deleteMember),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: l10n('Düzenle', 'Edit'),
+            onPressed: _editMember,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: l10n('Sil', 'Delete'),
+            onPressed: _deleteMember,
+          ),
         ],
       ),
       body: ListView(
@@ -92,11 +106,11 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _infoTile('E-posta', _member.email, Icons.email),
-          _infoTile('Telefon', _member.phone, Icons.phone),
-          _infoTile('Adres', _member.address, Icons.location_on),
+          _infoTile(l10n('E-posta', 'Email'), _member.email, Icons.email),
+          _infoTile(l10n('Telefon', 'Phone'), _member.phone, Icons.phone),
+          _infoTile(l10n('Adres', 'Address'), _member.address, Icons.location_on),
           _infoTile(
-            'Kayıt Tarihi',
+            l10n('Kayıt Tarihi', 'Registration Date'),
             _member.createdAt.toLocal().toString(),
             Icons.calendar_today,
           ),
