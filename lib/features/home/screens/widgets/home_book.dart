@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/features/books/models/book.dart';
+import 'package:libris/features/home/screens/widgets/dashboard_card.dart';
 import 'package:provider/provider.dart';
 
 class HomeBook extends StatefulWidget {
@@ -59,24 +61,25 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.all(8),
+    final scheme = Theme.of(context).colorScheme;
+
+    return DashboardCard(
+      title: l10n('Kitaplar', 'Books'),
+      subtitle: l10n('Okuma ve katalog hareketleri', 'Reading and catalog activity'),
+      icon: Icons.menu_book_rounded,
+      trailing: IconButton(
+        onPressed: _reload,
+        icon: const Icon(Icons.refresh_rounded),
+        tooltip: l10n('Yenile', 'Refresh'),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Text(
-              'Kitap İstatistikleri',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
           TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(text: 'En Çok Okunanlar'),
-              Tab(text: 'Son Eklenenler'),
+            tabs: [
+              Tab(text: l10n('En Çok Okunanlar', 'Most Read')),
+              Tab(text: l10n('Son Eklenenler', 'Recently Added')),
             ],
           ),
           Expanded(
@@ -93,13 +96,13 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
                   children: [
                     _buildBookList(
                       data[0],
-                      Icons.auto_stories,
-                      const Color(0xFFE95420),
+                      Icons.auto_stories_rounded,
+                      scheme.primary,
                     ),
                     _buildBookList(
                       data[1],
-                      Icons.new_releases,
-                      const Color(0xFF2C001E),
+                      Icons.new_releases_rounded,
+                      scheme.secondary,
                     ),
                   ],
                 );
@@ -113,10 +116,18 @@ class _HomeBookState extends State<HomeBook> with SingleTickerProviderStateMixin
 
   Widget _buildBookList(List<Book> books, IconData icon, Color iconColor) {
     if (books.isEmpty) {
-      return const Center(child: Text('Kayıt bulunamadı.'));
+      return DashboardEmptyState(
+        icon: Icons.menu_book_outlined,
+        title: l10n('Henüz kitap verisi yok', 'No book data yet'),
+        description: l10n(
+          'Kitaplar eklendikçe istatistikler burada oluşacak.',
+          'Statistics will appear here as books are added.',
+        ),
+      );
     }
 
     return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       itemCount: books.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Libris app icon</title>
+  <desc id="desc">A paper-colored open book with an orange spine and barcode marks on an aubergine rounded square.</desc>
+
+  <rect width="1024" height="1024" rx="196" fill="#2C001E"/>
+
+  <path d="M176 292 C292 250 399 270 500 348 L500 742 C405 690 302 680 186 719 C171 724 156 713 156 697 L156 320 C156 307 164 297 176 292Z" fill="#F7F3EE"/>
+  <path d="M848 292 C732 250 625 270 524 348 L524 742 C619 690 722 680 838 719 C853 724 868 713 868 697 L868 320 C868 307 860 297 848 292Z" fill="#F7F3EE"/>
+
+  <path d="M500 340 C505 332 519 332 524 340 L524 770 L512 752 L500 770Z" fill="#E95420"/>
+
+  <path d="M222 386 C312 360 394 371 456 411" fill="none" stroke="#2C001E" stroke-width="22" stroke-linecap="round" opacity=".18"/>
+  <path d="M222 468 C312 442 394 453 456 493" fill="none" stroke="#2C001E" stroke-width="22" stroke-linecap="round" opacity=".18"/>
+  <path d="M568 411 C630 371 712 360 802 386" fill="none" stroke="#2C001E" stroke-width="22" stroke-linecap="round" opacity=".18"/>
+
+  <g fill="#E95420">
+    <rect x="594" y="503" width="20" height="116" rx="8"/>
+    <rect x="628" y="487" width="13" height="132" rx="6"/>
+    <rect x="656" y="516" width="24" height="103" rx="8"/>
+    <rect x="696" y="478" width="16" height="141" rx="7"/>
+    <rect x="727" y="500" width="10" height="119" rx="5"/>
+    <rect x="752" y="489" width="22" height="130" rx="8"/>
+  </g>
+
+  <circle cx="792" cy="611" r="13" fill="#E95420"/>
+</svg>

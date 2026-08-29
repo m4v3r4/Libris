@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:libris/common/localization/app_localization.dart';
+import 'package:libris/common/widgets/section_toolbar.dart';
 import 'package:libris/features/dbeditor/services/database_inspector_service.dart';
 import 'package:libris/features/dbeditor/widgets/table_view.dart';
 import 'package:libris/features/settings/screen/category_manager_screen.dart';
@@ -15,9 +17,20 @@ class DatabaseHomeScreen extends StatefulWidget {
 
 class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
   final DatabaseInspectorService _service = DatabaseInspectorService();
+  final TextEditingController _searchController = TextEditingController();
+
   List<String> _tables = [];
   String? _selectedTable;
+  String _query = '';
   bool _isLoading = true;
+
+  List<String> get _filteredTables {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return _tables;
+    return _tables
+        .where((table) => table.toLowerCase().contains(query))
+        .toList();
+  }
 
   @override
   void initState() {
@@ -25,13 +38,36 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
     _loadTables();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadTables() async {
-    final tables = await _service.getTables();
-    if (!mounted) return;
-    setState(() {
-      _tables = tables;
-      _isLoading = false;
-    });
+    setState(() => _isLoading = true);
+
+    try {
+      final tables = await _service.getTables();
+      if (!mounted) return;
+      setState(() {
+        _tables = tables;
+        if (_selectedTable == null || !tables.contains(_selectedTable)) {
+          _selectedTable = tables.isEmpty ? null : tables.first;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n('Tablolar yüklenemedi: $e', 'Tables could not be loaded: $e'),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _exportDatabase() async {
@@ -48,90 +84,150 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
       final jsonString = const JsonEncoder.withIndent('  ').convert(dbExport);
 
       if (!mounted) return;
-      showDialog(
+      await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Veritabanı Dışa Aktar'),
-          content: SingleChildScrollView(child: SelectableText(jsonString)),
+          title: Row(
+            children: [
+              const Icon(Icons.download_rounded),
+              const SizedBox(width: 10),
+              Text(l10n('Veritabanını Dışa Aktar', 'Export Database')),
+            ],
+          ),
+          content: SizedBox(
+            width: 720,
+            height: 480,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Theme.of(dialogContext)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  jsonString,
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ),
+            ),
+          ),
           actions: [
-            TextButton.icon(
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n('Kapat', 'Close')),
+            ),
+            FilledButton.icon(
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: jsonString));
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Kopyalandı!')),
+                  SnackBar(
+                    content: Text(
+                      l10n('JSON panoya kopyalandı.', 'JSON copied to clipboard.'),
+                    ),
+                  ),
                 );
               },
-              icon: const Icon(Icons.copy),
-              label: const Text('Kopyala'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Kapat'),
+              icon: const Icon(Icons.copy_rounded, size: 18),
+              label: Text(l10n('Kopyala', 'Copy')),
             ),
           ],
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n('Dışa aktarma başarısız: $e', 'Export failed: $e'),
+          ),
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _importDatabase() async {
-    final TextEditingController controller = TextEditingController();
-    await showDialog(
+    final controller = TextEditingController();
+
+    await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Veritabanı İçe Aktar'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            const Text('JSON verisini buraya yapıştırın:'),
-            const SizedBox(height: 10),
-            TextField(
-              controller: controller,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: '{"tablo_adi": [...]}',
-              ),
-            ),
+            const Icon(Icons.upload_rounded),
+            const SizedBox(width: 10),
+            Text(l10n('Veritabanına İçe Aktar', 'Import Database')),
           ],
+        ),
+        content: SizedBox(
+          width: 620,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n(
+                  'JSON verisini aşağıya yapıştırın. Mevcut tabloların yapısına uygun kayıtlar veritabanına eklenecektir.',
+                  'Paste JSON data below. Records matching the structure of existing tables will be added to the database.',
+                ),
+                style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(dialogContext)
+                          .colorScheme
+                          .onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: controller,
+                minLines: 8,
+                maxLines: 14,
+                style: const TextStyle(fontFamily: 'monospace'),
+                decoration: InputDecoration(
+                  hintText: '{"table_name": [...]}',
+                  alignLabelWithHint: true,
+                  labelText: l10n('JSON verisi', 'JSON data'),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('İptal'),
+            child: Text(l10n('Vazgeç', 'Cancel')),
           ),
-          ElevatedButton(
+          FilledButton.icon(
             onPressed: () {
+              final json = controller.text.trim();
               Navigator.pop(dialogContext);
-              _processImport(controller.text);
+              _processImport(json);
             },
-            child: const Text('İçe Aktar'),
+            icon: const Icon(Icons.upload_rounded, size: 18),
+            label: Text(l10n('İçe Aktar', 'Import')),
           ),
         ],
       ),
     );
+
     controller.dispose();
   }
 
   Future<void> _processImport(String jsonString) async {
     if (jsonString.isEmpty) return;
     setState(() => _isLoading = true);
+
     try {
       final dynamic decoded = jsonDecode(jsonString);
       if (decoded is! Map<String, dynamic>) {
-        throw Exception('Geçersiz JSON formatı.');
+        throw Exception(l10n('Geçersiz JSON formatı.', 'Invalid JSON format.'));
       }
-      final Map<String, dynamic> data = Map<String, dynamic>.from(decoded);
-      int totalRows = 0;
+
+      final data = Map<String, dynamic>.from(decoded);
+      var totalRows = 0;
 
       for (final table in data.keys) {
         final rows = data[table];
@@ -147,18 +243,25 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('İçe aktarma başarılı: $totalRows kayıt.')),
+        SnackBar(
+          content: Text(
+            l10n(
+              '$totalRows kayıt içe aktarıldı.',
+              '$totalRows records imported.',
+            ),
+          ),
+        ),
       );
-      _loadTables();
+      await _loadTables();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('İçe aktarma hatası: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n('İçe aktarma hatası: $e', 'Import error: $e')),
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -171,90 +274,223 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Veritabanı Yöneticisi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.upload),
-            tooltip: 'İçe Aktar',
-            onPressed: _importDatabase,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: 'Dışa Aktar',
-            onPressed: _exportDatabase,
-          ),
-          IconButton(
-            icon: const Icon(Icons.category),
-            tooltip: 'Kategorileri Yönet',
-            onPressed: _openCategoryManager,
-          ),
-        ],
-      ),
-      body: Row(
+      body: Column(
         children: [
+          SectionToolbar(
+            title: l10n('Veritabanı Yöneticisi', 'Database Manager'),
+            subtitle: l10n(
+              'Yerel SQLite tablolarını inceleyin ve bakım işlemlerini yönetin.',
+              'Inspect local SQLite tables and manage maintenance operations.',
+            ),
+            icon: Icons.storage_rounded,
+            count: _tables.length,
+            onClose: () => Navigator.maybePop(context),
+            leadingIcon: Icons.arrow_back_rounded,
+            leadingTooltip: l10n('Geri', 'Back'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: l10n('Yenile', 'Refresh'),
+                onPressed: _isLoading ? null : _loadTables,
+              ),
+              IconButton(
+                icon: const Icon(Icons.category_outlined),
+                tooltip: l10n('Kategorileri Yönet', 'Manage Categories'),
+                onPressed: _openCategoryManager,
+              ),
+              const SizedBox(width: 4),
+              OutlinedButton.icon(
+                onPressed: _isLoading ? null : _importDatabase,
+                icon: const Icon(Icons.upload_rounded, size: 18),
+                label: Text(l10n('İçe Aktar', 'Import')),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: _isLoading ? null : _exportDatabase,
+                icon: const Icon(Icons.download_rounded, size: 18),
+                label: Text(l10n('Dışa Aktar', 'Export')),
+              ),
+            ],
+          ),
           Expanded(
-            flex: 1,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(right: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    width: double.infinity,
-                    child: const Text(
-                      'Tablolar',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ListView.separated(
-                            itemCount: _tables.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final table = _tables[index];
-                              final isSelected = table == _selectedTable;
-                              return ListTile(
-                                selected: isSelected,
-                                selectedTileColor: Theme.of(context)
-                                    .primaryColor
-                                    .withValues(alpha: 0.1),
-                                leading: const Icon(
-                                  Icons.table_chart,
-                                  color: Colors.blue,
-                                ),
-                                title: Text(table),
-                                trailing: isSelected
-                                    ? const Icon(Icons.chevron_right)
-                                    : null,
-                                onTap: () {
-                                  setState(() => _selectedTable = table);
-                                },
-                              );
-                            },
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 820) {
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedTable,
+                          decoration: InputDecoration(
+                            labelText: l10n('Tablo', 'Table'),
+                            prefixIcon: const Icon(Icons.table_chart_outlined),
                           ),
-                  ),
-                ],
-              ),
+                          items: _tables
+                              .map(
+                                (table) => DropdownMenuItem(
+                                  value: table,
+                                  child: Text(table),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedTable = value);
+                          },
+                        ),
+                      ),
+                      Divider(height: 1, color: scheme.outlineVariant),
+                      Expanded(child: _buildTableContent()),
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 270,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: scheme.surface,
+                          border: Border(
+                            right: BorderSide(color: scheme.outlineVariant),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                              child: SectionSearchField(
+                                controller: _searchController,
+                                hintText: l10n('Tablo ara...', 'Search tables...'),
+                                onChanged: (value) {
+                                  setState(() => _query = value);
+                                },
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+                              child: Text(
+                                l10n('TABLOLAR', 'TABLES'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                    ),
+                              ),
+                            ),
+                            Expanded(child: _buildTableList()),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(child: _buildTableContent()),
+                  ],
+                );
+              },
             ),
           ),
-          Expanded(
-            flex: 9,
-            child: _selectedTable == null
-                ? const Center(child: Text('İşlem yapmak için bir tablo seçin'))
-                : TableViewScreen(
-                    key: ValueKey(_selectedTable),
-                    tableName: _selectedTable!,
-                  ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTableList() {
+    final tables = _filteredTables;
+    final scheme = Theme.of(context).colorScheme;
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_tables.isEmpty) {
+      return SectionEmptyState(
+        icon: Icons.table_chart_outlined,
+        title: l10n('Tablo bulunamadı', 'No tables found'),
+        description: l10n(
+          'Yerel veritabanında görüntülenecek tablo yok.',
+          'There are no tables to display in the local database.',
+        ),
+      );
+    }
+
+    if (tables.isEmpty) {
+      return SectionEmptyState(
+        icon: Icons.search_off_rounded,
+        title: l10n('Tablo bulunamadı', 'No tables found'),
+        description: l10n(
+          'Arama ifadenizi değiştirerek tekrar deneyin.',
+          'Try changing your search query.',
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 14),
+      itemCount: tables.length,
+      itemBuilder: (context, index) {
+        final table = tables[index];
+        final selected = table == _selectedTable;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: ListTile(
+            selected: selected,
+            selectedColor: scheme.primary,
+            selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.45),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(11),
+            ),
+            leading: Icon(
+              Icons.table_chart_outlined,
+              size: 20,
+              color: selected ? scheme.primary : scheme.onSurfaceVariant,
+            ),
+            title: Text(
+              table,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            trailing: selected
+                ? Icon(Icons.chevron_right_rounded, color: scheme.primary)
+                : null,
+            onTap: () => setState(() => _selectedTable = table),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTableContent() {
+    if (_isLoading && _selectedTable == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final selected = _selectedTable;
+    if (selected == null) {
+      return SectionEmptyState(
+        icon: Icons.table_rows_outlined,
+        title: l10n('Bir tablo seçin', 'Select a table'),
+        description: l10n(
+          'Kayıtları görüntülemek ve düzenlemek için soldaki listeden bir tablo seçin.',
+          'Select a table from the list to view and edit its records.',
+        ),
+      );
+    }
+
+    return TableViewScreen(
+      key: ValueKey(selected),
+      tableName: selected,
     );
   }
 }

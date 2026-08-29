@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/features/books/models/book.dart';
 import 'package:libris/features/books/models/book_copy.dart';
@@ -74,24 +75,27 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final code = await showDialog<String?>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Yeni Nüsha Ekle'),
+        title: Text(l10n('Yeni Nüsha Ekle', 'Add Physical Copy')),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Envanter / Barkod No',
-            hintText: 'Boş bırakırsanız otomatik oluşturulur',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n('Envanter / Barkod No', 'Inventory / Barcode No.'),
+            hintText: l10n(
+              'Boş bırakırsanız otomatik oluşturulur',
+              'Leave blank to generate automatically',
+            ),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Vazgeç'),
+            child: Text(l10n('Vazgeç', 'Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Ekle'),
+            child: Text(l10n('Ekle', 'Add')),
           ),
         ],
       ),
@@ -126,18 +130,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Nüshayı Sil'),
+        title: Text(l10n('Nüshayı Sil', 'Delete Copy')),
         content: Text(
-          '${copy.inventoryCode} numaralı nüsha silinsin mi? Emanet geçmişi olan nüshalar silinemez.',
+          l10n(
+            '${copy.inventoryCode} numaralı nüsha silinsin mi? Emanet geçmişi olan nüshalar silinemez.',
+            'Delete copy ${copy.inventoryCode}? Copies with loan history cannot be deleted.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Vazgeç'),
+            child: Text(l10n('Vazgeç', 'Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Sil'),
+            child: Text(l10n('Sil', 'Delete')),
           ),
         ],
       ),
@@ -163,10 +170,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kitap Detayı'),
+        title: Text(l10n('Kitap Detayı', 'Book Details')),
         actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: _editBook),
-          IconButton(icon: const Icon(Icons.delete), onPressed: _deleteBook),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: l10n('Düzenle', 'Edit'),
+            onPressed: _editBook,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: l10n('Sil', 'Delete'),
+            onPressed: _deleteBook,
+          ),
         ],
       ),
       body: Padding(
@@ -175,11 +190,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           children: [
             _header(context),
             const SizedBox(height: 24),
-            _infoTile('Yazar', _book.author),
-            _infoTile('Açıklama', _book.description),
+            _infoTile(l10n('Yazar', 'Author'), _book.author),
+            _infoTile(l10n('Açıklama', 'Description'), _book.description),
             _infoTile(
-              'Durum',
-              _book.isAvailable ? 'Müsait nüsha var' : 'Müsait nüsha yok',
+              l10n('Durum', 'Status'),
+              _book.isAvailable
+                  ? l10n('Müsait nüsha var', 'Available copy exists')
+                  : l10n('Müsait nüsha yok', 'No available copies'),
               valueColor: _book.isAvailable ? Colors.green : Colors.red,
             ),
             const SizedBox(height: 12),
@@ -189,14 +206,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Fiziksel Nüshalar',
+                    l10n('Fiziksel Nüshalar', 'Physical Copies'),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
                 FilledButton.icon(
                   onPressed: _addCopy,
                   icon: const Icon(Icons.add),
-                  label: const Text('Nüsha Ekle'),
+                  label: Text(l10n('Nüsha Ekle', 'Add Copy')),
                 ),
               ],
             ),
@@ -205,19 +222,24 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _statChip('Toplam', _copyStats['total'] ?? 0),
-                _statChip('Müsait', _copyStats['available'] ?? 0),
-                _statChip('Emanette', _copyStats['loaned'] ?? 0),
-                _statChip('Kayıp', _copyStats['lost'] ?? 0),
-                _statChip('Bakımda', _copyStats['maintenance'] ?? 0),
+                _statChip(l10n('Toplam', 'Total'), _copyStats['total'] ?? 0),
+                _statChip(l10n('Müsait', 'Available'), _copyStats['available'] ?? 0),
+                _statChip(l10n('Emanette', 'Loaned'), _copyStats['loaned'] ?? 0),
+                _statChip(l10n('Kayıp', 'Lost'), _copyStats['lost'] ?? 0),
+                _statChip(l10n('Bakımda', 'Maintenance'), _copyStats['maintenance'] ?? 0),
               ],
             ),
             const SizedBox(height: 12),
             if (_copies.isEmpty)
-              const Card(
+              Card(
                 child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Bu kitap için fiziksel nüsha kaydı bulunmuyor.'),
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    l10n(
+                      'Bu kitap için fiziksel nüsha kaydı bulunmuyor.',
+                      'There are no physical copies recorded for this book.',
+                    ),
+                  ),
                 ),
               )
             else
@@ -235,7 +257,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         Text(_book.title, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
         Chip(
-          label: Text(_book.isAvailable ? 'Müsait' : 'Müsait Değil'),
+          label: Text(
+            _book.isAvailable
+                ? l10n('Müsait', 'Available')
+                : l10n('Müsait Değil', 'Unavailable'),
+          ),
           backgroundColor: _book.isAvailable
               ? Colors.green.shade100
               : Colors.red.shade100,
@@ -260,26 +286,26 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             PopupMenuButton<BookCopyStatus>(
               enabled: !copy.isLoaned,
               tooltip: copy.isLoaned
-                  ? 'Emanetteki nüsha değiştirilemez'
-                  : 'Durumu değiştir',
+                  ? l10n('Emanetteki nüsha değiştirilemez', 'A loaned copy cannot be changed')
+                  : l10n('Durumu değiştir', 'Change status'),
               onSelected: (status) => _changeCopyStatus(copy, status),
-              itemBuilder: (_) => const [
+              itemBuilder: (_) => [
                 PopupMenuItem(
                   value: BookCopyStatus.available,
-                  child: Text('Müsait'),
+                  child: Text(l10n('Müsait', 'Available')),
                 ),
                 PopupMenuItem(
                   value: BookCopyStatus.lost,
-                  child: Text('Kayıp'),
+                  child: Text(l10n('Kayıp', 'Lost')),
                 ),
                 PopupMenuItem(
                   value: BookCopyStatus.maintenance,
-                  child: Text('Bakımda'),
+                  child: Text(l10n('Bakımda', 'Maintenance')),
                 ),
               ],
             ),
             IconButton(
-              tooltip: 'Nüshayı sil',
+              tooltip: l10n('Nüshayı sil', 'Delete copy'),
               onPressed: copy.isLoaned ? null : () => _deleteCopy(copy),
               icon: const Icon(Icons.delete_outline),
             ),
@@ -295,10 +321,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   String _statusLabel(BookCopyStatus status) {
     return switch (status) {
-      BookCopyStatus.available => 'Müsait',
-      BookCopyStatus.loaned => 'Emanette',
-      BookCopyStatus.lost => 'Kayıp',
-      BookCopyStatus.maintenance => 'Bakımda',
+      BookCopyStatus.available => l10n('Müsait', 'Available'),
+      BookCopyStatus.loaned => l10n('Emanette', 'Loaned'),
+      BookCopyStatus.lost => l10n('Kayıp', 'Lost'),
+      BookCopyStatus.maintenance => l10n('Bakımda', 'Maintenance'),
     };
   }
 

@@ -21,25 +21,50 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: _paper,
       appBarTheme: AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: scheme.surface,
         foregroundColor: _aubergine,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       cardTheme: CardThemeData(
-        elevation: 1,
-        margin: const EdgeInsets.all(8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 0,
+        margin: const EdgeInsets.all(6),
+        color: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant,
+        thickness: 1,
+        space: 1,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+        ),
       ),
       chipTheme: ChipThemeData.fromDefaults(
         secondaryColor: _ubuntuOrange,
         brightness: Brightness.light,
         labelStyle: const TextStyle(color: _warmGrey),
+      ),
+      listTileTheme: const ListTileThemeData(
+        iconColor: _warmGrey,
       ),
     );
   }
@@ -58,20 +83,42 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: _darkBg,
       appBarTheme: AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: scheme.surface,
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       cardTheme: CardThemeData(
-        elevation: 1,
-        margin: const EdgeInsets.all(8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 0,
+        margin: const EdgeInsets.all(6),
+        color: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant,
+        thickness: 1,
+        space: 1,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: scheme.surface.withValues(alpha: 0.7),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+        ),
       ),
     );
   }

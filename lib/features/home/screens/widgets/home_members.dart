@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/models/member.dart';
 import 'package:libris/common/providers/database_provider.dart';
+import 'package:libris/features/home/screens/widgets/dashboard_card.dart';
 import 'package:provider/provider.dart';
 
 class HomeMembers extends StatefulWidget {
@@ -60,24 +62,28 @@ class _HomeMembersState extends State<HomeMembers>
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.all(8),
+    final scheme = Theme.of(context).colorScheme;
+
+    return DashboardCard(
+      title: l10n('Üyeler', 'Members'),
+      subtitle: l10n(
+        'Okuyucu hareketleri ve yeni kayıtlar',
+        'Reader activity and new registrations',
+      ),
+      icon: Icons.groups_2_rounded,
+      trailing: IconButton(
+        onPressed: _reload,
+        icon: const Icon(Icons.refresh_rounded),
+        tooltip: l10n('Yenile', 'Refresh'),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Text(
-              'Üye İstatistikleri',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
           TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(text: 'En Çok Okuyanlar'),
-              Tab(text: 'Son Üyeler'),
+            tabs: [
+              Tab(text: l10n('En Çok Okuyanlar', 'Top Readers')),
+              Tab(text: l10n('Son Üyeler', 'Recent Members')),
             ],
           ),
           Expanded(
@@ -94,13 +100,13 @@ class _HomeMembersState extends State<HomeMembers>
                   children: [
                     _buildMemberList(
                       data[0],
-                      Icons.star,
-                      const Color(0xFFE95420),
+                      Icons.workspace_premium_rounded,
+                      scheme.primary,
                     ),
                     _buildMemberList(
                       data[1],
-                      Icons.person_add,
-                      const Color(0xFF2C001E),
+                      Icons.person_add_alt_1_rounded,
+                      scheme.secondary,
                     ),
                   ],
                 );
@@ -118,10 +124,18 @@ class _HomeMembersState extends State<HomeMembers>
     Color iconColor,
   ) {
     if (members.isEmpty) {
-      return const Center(child: Text('Kayıt bulunamadı.'));
+      return DashboardEmptyState(
+        icon: Icons.group_outlined,
+        title: l10n('Henüz üye verisi yok', 'No member data yet'),
+        description: l10n(
+          'Üyeler eklendikçe hareketler burada görünecek.',
+          'Activity will appear here as members are added.',
+        ),
+      );
     }
 
     return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       itemCount: members.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {

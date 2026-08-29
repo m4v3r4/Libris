@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:libris/common/database/database_platform.dart';
+import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/providers/database_provider.dart';
 import 'package:libris/common/services/database_helper.dart';
 import 'package:libris/common/theme/app_theme.dart';
@@ -36,13 +38,21 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: appThemeNotifier,
       builder: (context, mode, child) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'Libris Kütüphane',
-          themeMode: mode,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          home: const HomeScreen(),
+        return ValueListenableBuilder<String>(
+          valueListenable: appLanguageNotifier,
+          builder: (context, language, child) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: l10n('Libris Kütüphane', 'Libris Library'),
+              locale: Locale(language),
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              supportedLocales: const [Locale('tr'), Locale('en')],
+              themeMode: mode,
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              home: const HomeScreen(),
+            );
+          },
         );
       },
     );
