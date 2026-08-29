@@ -24,9 +24,17 @@ Libris is free software released under the **GNU General Public License v3.0**. 
 
 ## Screenshots
 
-| Library overview | Books |
-| --- | --- |
-| ![Libris library overview](docs/screenshots/overview-light.jpg) | ![Libris books screen](docs/screenshots/books.jpg) |
+### Library overview
+
+<p align="center">
+  <img src="docs/screenshots/overview-light.webp" alt="Libris library overview" width="960">
+</p>
+
+### Books
+
+<p align="center">
+  <img src="docs/screenshots/books.webp" alt="Libris books screen" width="960">
+</p>
 
 The interface supports both light and dark themes and can be switched between Turkish and English at runtime.
 
