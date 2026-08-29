@@ -24,7 +24,11 @@ Libris is free software released under the **GNU General Public License v3.0**. 
 
 ## Screenshots
 
-Screenshots of the current interface will be added here.
+| Library overview | Books |
+| --- | --- |
+| ![Libris library overview](docs/screenshots/overview-light.jpg) | ![Libris books screen](docs/screenshots/books.jpg) |
+
+The interface supports both light and dark themes and can be switched between Turkish and English at runtime.
 
 ## Features
 
@@ -58,14 +62,22 @@ Screenshots of the current interface will be added here.
 ### 📊 Dashboard
 
 - Overview of the current library state
-- Book, member, and loan statistics
+- Book, member, loan, category, and notification panels
 - Quick-access actions
+- Reorder, resize, hide, and restore dashboard panels
+- Persist dashboard layout locally
 
 ### 🗄️ Database Tools
 
 - Inspect and edit the local SQLite database
 - Import and export data using JSON, CSV, and Excel
 - Manage book categories
+
+### 🌐 Language & Appearance
+
+- Turkish and English runtime language selection
+- Light and dark themes
+- Local persistence for appearance and language settings
 
 ## Why Offline-First?
 
@@ -87,6 +99,7 @@ That idea is still part of the project today. The library data belongs to the li
 lib/
 ├── common/
 │   ├── database/
+│   ├── localization/
 │   ├── models/
 │   ├── providers/
 │   ├── services/
@@ -165,7 +178,7 @@ flutter test
 
 Desktop pull requests are also smoke-built for Windows, Linux, and macOS.
 
-The project deliberately stays relatively small and approachable. Changes that improve reliability, usability, portability, or maintainability are especially welcome.
+The project deliberately stays relatively small and approachable. Changes that improve reliability, usability, portability, accessibility, translations, or maintainability are especially welcome.
 
 ## Contributing
 
@@ -181,6 +194,10 @@ If you would like to improve Libris, you can:
 - Fork the project and take it in your own direction
 
 For larger changes, opening an issue first is useful so the idea can be discussed before implementation.
+
+Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before submitting a change. Participation in the project is covered by [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
+Security vulnerabilities should **not** be reported in public issues; see [`SECURITY.md`](SECURITY.md) for the private reporting process.
 
 ## Roadmap
 

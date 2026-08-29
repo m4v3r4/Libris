@@ -1,0 +1,56 @@
+name: Feature request
+description: Suggest an improvement for Libris
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Libris intentionally stays small and offline-first. The most useful requests solve a concrete local library workflow without adding unnecessary complexity.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or need
+      description: What library workflow or user problem are you trying to improve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or behavior you would like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Is there a simpler workaround or another approach?
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Does this require internet or a remote service?
+      options:
+        - No
+        - Optional
+        - Yes
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, examples, screenshots, or related projects are welcome.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and the roadmap before opening this request.
+          required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/m4v3r4/Libris/security/advisories/new
+    about: Report security vulnerabilities privately instead of opening a public issue.
+  - name: Libris roadmap
+    url: https://github.com/m4v3r4/Libris/issues/31
+    about: Check the current roadmap and existing planned work.

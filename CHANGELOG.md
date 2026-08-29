@@ -9,6 +9,11 @@
 - Copy management directly from the book detail screen.
 - Copy inventory codes on loan cards and detailed loan queries.
 - Regression tests for copy creation, availability, multi-copy loans, returns, deletion rules, and legacy data backfill.
+- Refreshed Libris branding assets for in-app, Android, and Windows use.
+- Configurable dashboard panels with persisted visibility, size, and ordering.
+- Functional Turkish and English runtime localization.
+- Community contribution, conduct, security, issue, and pull-request guidance.
+- Current UI screenshots in the project README.
 
 ### Changed
 - Loans now reference a specific physical copy through nullable `loans.copyId`.
@@ -17,6 +22,10 @@
 - Active loans lock their physical copy until the loan is returned or deleted.
 - New books automatically receive one initial physical copy.
 - Application version updated to `1.2.0+4`.
+- Redesigned the desktop application shell, navigation, dashboard, books, members, loans, categories, settings, and database tools.
+- Refined light and dark theme surfaces, cards, inputs, dialogs, status treatments, and empty states.
+- Language changes now apply immediately and persist locally across restarts.
+- Built-in Material controls and date pickers now follow the selected Turkish or English locale.
 
 ### Compatibility
 - Existing v1.1 books are preserved and receive an automatically generated initial copy.
