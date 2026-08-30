@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:libris/common/database/database_backup_service.dart';
 import 'package:libris/common/localization/app_localization.dart';
 import 'package:libris/common/widgets/section_toolbar.dart';
 import 'package:libris/features/dbeditor/services/database_inspector_service.dart';
@@ -17,6 +18,7 @@ class DatabaseHomeScreen extends StatefulWidget {
 
 class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
   final DatabaseInspectorService _service = DatabaseInspectorService();
+  final DatabaseBackupService _backupService = const DatabaseBackupService();
   final TextEditingController _searchController = TextEditingController();
 
   List<String> _tables = [];
@@ -73,15 +75,9 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
   Future<void> _exportDatabase() async {
     setState(() => _isLoading = true);
     try {
-      final tables = await _service.getTables();
-      final Map<String, dynamic> dbExport = {};
-
-      for (final table in tables) {
-        final rows = await _service.getTableData(table);
-        dbExport[table] = rows;
-      }
-
-      final jsonString = const JsonEncoder.withIndent('  ').convert(dbExport);
+      final db = await _service.getDatabase();
+      final backup = await _backupService.createBackup(db);
+      final jsonString = const JsonEncoder.withIndent('  ').convert(backup);
 
       if (!mounted) return;
       await showDialog<void>(
@@ -100,10 +96,9 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Theme.of(dialogContext)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.45),
+                color: Theme.of(
+                  dialogContext,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: SingleChildScrollView(
@@ -125,7 +120,10 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
                     content: Text(
-                      l10n('JSON panoya kopyalandı.', 'JSON copied to clipboard.'),
+                      l10n(
+                        'JSON panoya kopyalandı.',
+                        'JSON copied to clipboard.',
+                      ),
                     ),
                   ),
                 );
@@ -171,14 +169,12 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
             children: [
               Text(
                 l10n(
-                  'JSON verisini aşağıya yapıştırın. Mevcut tabloların yapısına uygun kayıtlar veritabanına eklenecektir.',
-                  'Paste JSON data below. Records matching the structure of existing tables will be added to the database.',
+                  'Libris tarafından oluşturulmuş sürümlü JSON yedeğini aşağıya yapıştırın. Geri yükleme tek işlem olarak uygulanır; hata olursa mevcut veritabanı değişmeden kalır.',
+                  'Paste a versioned JSON backup created by Libris. Restore runs atomically; if it fails, the existing database remains unchanged.',
                 ),
                 style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(dialogContext)
-                          .colorScheme
-                          .onSurfaceVariant,
-                    ),
+                  color: Theme.of(dialogContext).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 14),
               TextField(
@@ -223,31 +219,19 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
     try {
       final dynamic decoded = jsonDecode(jsonString);
       if (decoded is! Map<String, dynamic>) {
-        throw Exception(l10n('Geçersiz JSON formatı.', 'Invalid JSON format.'));
+        throw const DatabaseBackupException('Geçersiz JSON formatı.');
       }
 
-      final data = Map<String, dynamic>.from(decoded);
-      var totalRows = 0;
-
-      for (final table in data.keys) {
-        final rows = data[table];
-        if (rows is List) {
-          for (final row in rows) {
-            if (row is Map<String, dynamic>) {
-              await _service.insertRow(table, row);
-              totalRows++;
-            }
-          }
-        }
-      }
+      final db = await _service.getDatabase();
+      await _backupService.restoreBackup(db, decoded);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             l10n(
-              '$totalRows kayıt içe aktarıldı.',
-              '$totalRows records imported.',
+              'Yedek başarıyla geri yüklendi.',
+              'Backup restored successfully.',
             ),
           ),
         ),
@@ -363,10 +347,18 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                14,
+                                14,
+                                10,
+                              ),
                               child: SectionSearchField(
                                 controller: _searchController,
-                                hintText: l10n('Tablo ara...', 'Search tables...'),
+                                hintText: l10n(
+                                  'Tablo ara...',
+                                  'Search tables...',
+                                ),
                                 onChanged: (value) {
                                   setState(() => _query = value);
                                 },
@@ -376,9 +368,7 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
                               child: Text(
                                 l10n('TABLOLAR', 'TABLES'),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
+                                style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
                                       color: scheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w800,
@@ -488,9 +478,6 @@ class _DatabaseHomeScreenState extends State<DatabaseHomeScreen> {
       );
     }
 
-    return TableViewScreen(
-      key: ValueKey(selected),
-      tableName: selected,
-    );
+    return TableViewScreen(key: ValueKey(selected), tableName: selected);
   }
 }
