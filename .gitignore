@@ -2,12 +2,16 @@
 # OS / editor junk
 # -----------------------------------------------------------------------------
 .DS_Store
+**/.DS_Store
+._*
 Thumbs.db
 Desktop.ini
+*~
 *.swp
 *.swo
 *.tmp
 *.bak
+*.orig
 *.log
 .history/
 
@@ -17,6 +21,7 @@ Desktop.ini
 *.ipr
 *.iws
 .vscode/
+.fleet/
 devtools_options.yaml
 
 # Local environment / secrets
@@ -38,6 +43,7 @@ key.properties
 .pub/
 .flutter-plugins
 .flutter-plugins-dependencies
+.flutter_tool_state
 **/doc/api/
 /build/
 coverage/
@@ -55,6 +61,7 @@ coverage/
 # -----------------------------------------------------------------------------
 android/.gradle/
 android/local.properties
+android/captures/
 android/**/.cxx/
 android/app/debug/
 android/app/profile/
@@ -73,6 +80,7 @@ macos/Flutter/ephemeral/
 DerivedData/
 *.xcuserstate
 xcuserdata/
+*.dSYM/
 
 # -----------------------------------------------------------------------------
 # Windows / Linux generated files
@@ -86,8 +94,15 @@ linux/flutter/ephemeral/
 *.db
 *.db-shm
 *.db-wal
+*.db-journal
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
 *.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
 *.csv
 *.xlsx
 *.json.bak
@@ -95,11 +110,26 @@ linux/flutter/ephemeral/
 # Keep application source/config JSON files tracked; only backup JSON is ignored.
 
 # -----------------------------------------------------------------------------
+# Packaged release artifacts
+# -----------------------------------------------------------------------------
+*.apk
+*.aab
+*.ipa
+*.dmg
+*.pkg
+*.msix
+*.AppImage
+*.deb
+*.rpm
+
+# -----------------------------------------------------------------------------
 # Misc build artifacts
 # -----------------------------------------------------------------------------
 *.class
 *.pyc
 *.symbols
+*.dmp
+*.profraw
 app.*.symbols
 app.*.map.json
 .atom/
